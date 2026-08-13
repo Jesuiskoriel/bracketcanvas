@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="686" height="386" viewBox="0 0 686 386">
+  <defs>
+    <pattern id="micro-dots" width="12" height="12" patternUnits="userSpaceOnUse">
+      <circle cx="3" cy="3" r="1.5" fill="#090909" opacity=".55"/>
+    </pattern>
+    <linearGradient id="red-field" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff4a50"/>
+      <stop offset="1" stop-color="#c91425"/>
+    </linearGradient>
+  </defs>
+  <rect width="686" height="386" fill="#080808"/>
+  <rect y="70" width="686" height="316" fill="url(#red-field)"/>
+  <rect y="70" width="686" height="316" fill="url(#micro-dots)" opacity=".48"/>
+  <path d="M0 70H95L74 386H0ZM686 70H624L647 386H686Z" fill="#070707" opacity=".82"/>
+  <path d="M0 68H686M0 72H686" stroke="#fff" stroke-width="2" opacity=".92"/>
+  <path d="M18 0H100L91 17H18ZM586 53H668L659 70H577Z" fill="#ef3540"/>
+  <path d="M22 9H94M593 61H660" stroke="#fff" stroke-width="2"/>
+  <g stroke="#ef3540" stroke-width="1" opacity=".32">
+    <path d="M115 70L186 386M155 70L230 386M530 70L468 386M570 70L512 386"/>
+  </g>
+</svg>

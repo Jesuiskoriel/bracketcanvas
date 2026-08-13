@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="180" viewBox="0 0 360 180">
+  <defs>
+    <radialGradient id="vortex" cx="22%" cy="48%" r="92%">
+      <stop stop-color="#58efff"/>
+      <stop offset=".25" stop-color="#126fc4"/>
+      <stop offset="1" stop-color="#03112e"/>
+    </radialGradient>
+    <pattern id="small-dots" width="12" height="12" patternUnits="userSpaceOnUse">
+      <circle cx="3" cy="3" r="2.2" fill="#020711"/>
+    </pattern>
+  </defs>
+  <rect width="360" height="180" fill="url(#vortex)"/>
+  <rect width="360" height="180" fill="url(#small-dots)" opacity=".52"/>
+  <g fill="none" stroke="#bdfaff" stroke-width="5" opacity=".34">
+    <path d="M-48 92C22 0 152 2 237 58S350 170 432 96"/>
+    <path d="M-55 126C36 32 154 35 227 86S341 191 425 137"/>
+    <path d="M-42 57C28-21 157-23 248 29S364 135 432 65"/>
+  </g>
+  <circle cx="77" cy="87" r="19" fill="#dffcff" opacity=".26"/>
+</svg>

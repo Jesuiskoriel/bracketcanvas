@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="260" height="180" viewBox="0 0 260 180">
+  <defs>
+    <pattern id="mini" width="10" height="10" patternUnits="userSpaceOnUse">
+      <circle cx="2.5" cy="2.5" r="1.6" fill="#68efff"/>
+    </pattern>
+  </defs>
+  <rect width="260" height="180" fill="#061d49"/>
+  <rect width="260" height="180" fill="url(#mini)" opacity=".48"/>
+  <g fill="#0f7bd2" stroke="#020711" stroke-width="5" stroke-linejoin="miter">
+    <path d="M-18 33L56 4L41 51L106 26L91 73L158 45L140 98L211 66L189 119L278 84V121L208 151L226 105L158 136L174 86L108 113L122 67L57 93L71 48L-18 80Z"/>
+  </g>
+  <path d="M-8 139L58 116L49 147L104 129L97 160L156 139L149 180H-8Z" fill="#2adfed" opacity=".72"/>
+</svg>

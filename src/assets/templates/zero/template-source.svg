@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="686" height="386" viewBox="0 0 686 386">
+  <title>Top 8 Zero — source vectorielle</title>
+  <desc>Les formes exactes utilisées par l'application sont éditables dans frames-base.svg et frames-overlay.svg.</desc>
+  <g id="background">
+    <image href="background.png" x="0" y="0" width="686" height="386"/>
+  </g>
+  <g id="parchment-cards">
+    <image href="frames-base.svg" x="0" y="0" width="686" height="386"/>
+  </g>
+  <g id="ink-borders-and-ranks">
+    <image href="frames-overlay.svg" x="0" y="0" width="686" height="386"/>
+  </g>
+</svg>

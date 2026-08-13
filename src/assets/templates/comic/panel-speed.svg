@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="340" height="180" viewBox="0 0 340 180">
+  <defs>
+    <linearGradient id="speed-bg" x1="0" y1="1" x2="1" y2="0">
+      <stop stop-color="#03102a"/>
+      <stop offset=".58" stop-color="#0a4b9c"/>
+      <stop offset="1" stop-color="#12c9e6"/>
+    </linearGradient>
+  </defs>
+  <rect width="340" height="180" fill="url(#speed-bg)"/>
+  <g fill="#dffcff" opacity=".7">
+    <path d="M340 18L28 0H0L340 29Z"/><path d="M340 43L79 32L18 36L340 51Z"/>
+    <path d="M340 67L115 59L47 66L340 73Z"/><path d="M340 91L58 87L0 96L340 98Z"/>
+    <path d="M340 116L102 112L30 125L340 123Z"/><path d="M340 143L43 143L0 157L340 151Z"/>
+    <path d="M340 164L132 166L75 180H340Z"/>
+  </g>
+  <g fill="#176d35" opacity=".5">
+    <path d="M340 34L177 29L129 34L340 39Z"/><path d="M340 105L205 102L153 108L340 111Z"/>
+  </g>
+</svg>

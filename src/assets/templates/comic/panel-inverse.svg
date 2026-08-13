@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="180" viewBox="0 0 240 180">
+  <defs>
+    <pattern id="cyan-dots" width="20" height="20" patternUnits="userSpaceOnUse">
+      <circle cx="6" cy="6" r="5" fill="#12bde0"/>
+    </pattern>
+  </defs>
+  <rect width="240" height="180" fill="#020817"/>
+  <rect width="240" height="180" fill="url(#cyan-dots)"/>
+  <path d="M0 0H240V25L0 92Z" fill="#1d7ccc" opacity=".64"/>
+  <path d="M0 154L240 112V180H0Z" fill="#176d35" opacity=".28"/>
+</svg>

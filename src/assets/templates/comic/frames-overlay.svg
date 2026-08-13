@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="686" height="386" viewBox="0 0 686 386">
+  <g fill="none" stroke-linecap="square" stroke-linejoin="miter">
+    <g stroke="#020711" stroke-width="8">
+      <path d="M0 60H686M0 280H686"/>
+      <path d="M0 170H215M490 170H686"/>
+      <path d="M240 60L215 170L245 280"/>
+      <path d="M470 60L490 170L470 280"/>
+      <path d="M245 280L225 386M470 280L510 386"/>
+    </g>
+    <g stroke="#dffcff" stroke-width="2.7">
+      <path d="M0 60H686M0 280H686"/>
+      <path d="M0 170H215M490 170H686"/>
+      <path d="M240 60L215 170L245 280"/>
+      <path d="M470 60L490 170L470 280"/>
+      <path d="M245 280L225 386M470 280L510 386"/>
+    </g>
+  </g>
+</svg>
