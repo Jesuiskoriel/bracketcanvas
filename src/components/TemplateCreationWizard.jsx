@@ -12,8 +12,10 @@ import TemplateLivePreview from './TemplateLivePreview.jsx'
 
 const STEPS = [
   { id: 'identity', label: 'Identité' },
-  { id: 'direction', label: 'Direction artistique' },
+  { id: 'direction', label: 'Univers' },
   { id: 'composition', label: 'Composition' },
+  { id: 'panels', label: 'Cases' },
+  { id: 'typography', label: 'Titres' },
   { id: 'colors', label: 'Couleurs' },
   { id: 'summary', label: 'Résumé' },
 ]
@@ -33,6 +35,43 @@ const COLOR_MODES = [
   ['auto', 'Choisir pour moi', 'Palette cohérente avec la direction artistique.'],
   ['primary', 'Depuis une couleur', 'Construire une harmonie depuis une dominante.'],
   ['custom', 'Palette personnalisée', 'Contrôler les quatre couleurs fondatrices.'],
+]
+
+const PANEL_SHAPES = [
+  ['irregular', 'Irrégulières', 'Des angles variés et une énergie plus organique.'],
+  ['diagonal', 'Diagonales', 'Des cases inclinées, rapides et très esport.'],
+  ['cut-corners', 'Coins coupés', 'Un rendu graphique net, façon interface futuriste.'],
+  ['clean', 'Rectangulaires', 'Une grille plus calme et parfaitement structurée.'],
+]
+
+const FRAME_STYLES = [
+  ['double', 'Double trait'], ['ink', 'Encrage fort'],
+  ['accent', 'Trait couleur'], ['fine', 'Trait fin'],
+]
+
+const LABEL_POSITIONS = [
+  ['bottom', 'En bas'], ['top', 'En haut'], ['alternating', 'Alternés'],
+]
+
+const TEXTURES = [
+  ['auto', 'Adaptée au style'], ['halftone', 'Trame comic'], ['grid', 'Grille'],
+  ['speed', 'Lignes de vitesse'], ['noise', 'Grunge'], ['minimal', 'Minimaliste'],
+]
+
+const TYPOGRAPHIES = [
+  ['auto', 'Adaptée à l’univers', 'Le générateur choisit la meilleure association.'],
+  ['condensed', 'Condensée impact', 'Titres massifs et compétition.'],
+  ['serif', 'Éditoriale serif', 'Plus premium, magazine et expressive.'],
+  ['geometric', 'Géométrique', 'Claire, moderne et très lisible.'],
+  ['mono', 'Monospace', 'Technique, arcade ou science-fiction.'],
+]
+
+const RANK_STYLES = [
+  ['impact', 'Impact'], ['badge', 'Pastille'], ['shadow', 'Ombre décalée'], ['clean', 'Épuré'],
+]
+
+const HEADER_STYLES = [
+  ['band', 'Bandeau'], ['split', 'Découpé'], ['poster', 'Affiche'], ['minimal', 'Minimal'],
 ]
 
 const SliderField = ({ id, label, low, high, value, onChange }) => (
@@ -104,6 +143,8 @@ export default function TemplateCreationWizard({ projectName, onBack, onCancel, 
 
   const selectedFamily = generatedFamilies.find(({ id }) => id === brief.artDirection.family)
   const selectedLayout = generatedLayouts.find(({ id }) => id === brief.composition.layoutFamily)
+  const selectedShape = PANEL_SHAPES.find(([id]) => id === brief.panels.shapeStyle)
+  const selectedTypography = TYPOGRAPHIES.find(([id]) => id === brief.typography.family)
   const intensityIndex = Math.min(3, Math.floor(Number(brief.artDirection.intensity) / 25))
   const previewTemplate = useMemo(
     () => generateTemplate({ brief, seed: previewSeed }),
@@ -178,6 +219,56 @@ export default function TemplateCreationWizard({ projectName, onBack, onCancel, 
           </>
         )}
 
+        {step.id === 'panels' && (
+          <>
+            <p className="wizard-question">Donne une vraie personnalité aux huit cases.</p>
+            <fieldset className="wizard-fieldset wizard-fieldset-first">
+              <legend>Forme des cases</legend>
+              <div className="wizard-choice-grid wizard-option-grid">
+                {PANEL_SHAPES.map(([id, title, description]) => <ChoiceCard key={id} selected={brief.panels.shapeStyle === id} title={title} description={description} onClick={() => patchSection('panels', { shapeStyle: id })} />)}
+              </div>
+            </fieldset>
+            <div className="wizard-two-column-options">
+              <fieldset className="wizard-fieldset">
+                <legend>Style des cadres</legend>
+                <div className="wizard-chip-list">{FRAME_STYLES.map(([id, label]) => <button type="button" key={id} className={brief.panels.frameStyle === id ? 'is-selected' : ''} aria-pressed={brief.panels.frameStyle === id} onClick={() => patchSection('panels', { frameStyle: id })}>{label}</button>)}</div>
+              </fieldset>
+              <fieldset className="wizard-fieldset">
+                <legend>Position des pseudos</legend>
+                <div className="wizard-chip-list">{LABEL_POSITIONS.map(([id, label]) => <button type="button" key={id} className={brief.panels.labelPosition === id ? 'is-selected' : ''} aria-pressed={brief.panels.labelPosition === id} onClick={() => patchSection('panels', { labelPosition: id })}>{label}</button>)}</div>
+              </fieldset>
+            </div>
+            <fieldset className="wizard-fieldset">
+              <legend>Texture intérieure</legend>
+              <div className="wizard-chip-list">{TEXTURES.map(([id, label]) => <button type="button" key={id} className={brief.panels.texture === id ? 'is-selected' : ''} aria-pressed={brief.panels.texture === id} onClick={() => patchSection('panels', { texture: id })}>{label}</button>)}</div>
+            </fieldset>
+            <div className="wizard-slider-grid wizard-slider-grid-two">
+              <SliderField id="wizard-label-width" label="Largeur des pseudos" low="Courte" high="Pleine largeur" value={brief.panels.labelWidth} onChange={(labelWidth) => patchSection('panels', { labelWidth })} />
+              <SliderField id="wizard-texture-scale" label="Échelle du motif" low="Fine" high="Large" value={brief.panels.textureScale} onChange={(textureScale) => patchSection('panels', { textureScale })} />
+            </div>
+          </>
+        )}
+
+        {step.id === 'typography' && (
+          <>
+            <p className="wizard-question">Comment le tournoi doit-il prendre la parole ?</p>
+            <div className="wizard-choice-grid wizard-typography-grid">
+              {TYPOGRAPHIES.map(([id, title, description]) => <ChoiceCard key={id} selected={brief.typography.family === id} title={title} description={description} onClick={() => patchSection('typography', { family: id })} />)}
+            </div>
+            <div className="wizard-two-column-options">
+              <fieldset className="wizard-fieldset">
+                <legend>Style des placements</legend>
+                <div className="wizard-chip-list">{RANK_STYLES.map(([id, label]) => <button type="button" key={id} className={brief.typography.rankStyle === id ? 'is-selected' : ''} aria-pressed={brief.typography.rankStyle === id} onClick={() => patchSection('typography', { rankStyle: id })}>{label}</button>)}</div>
+              </fieldset>
+              <fieldset className="wizard-fieldset">
+                <legend>Construction du bandeau</legend>
+                <div className="wizard-chip-list">{HEADER_STYLES.map(([id, label]) => <button type="button" key={id} className={brief.typography.headerStyle === id ? 'is-selected' : ''} aria-pressed={brief.typography.headerStyle === id} onClick={() => patchSection('typography', { headerStyle: id })}>{label}</button>)}</div>
+              </fieldset>
+            </div>
+            <SliderField id="wizard-background-energy" label="Énergie du fond" low="Très calme" high="Très présent" value={brief.typography.backgroundEnergy} onChange={(backgroundEnergy) => patchSection('typography', { backgroundEnergy })} />
+          </>
+        )}
+
         {step.id === 'colors' && (
           <>
             <p className="wizard-question">Quelle palette veux-tu ?</p>
@@ -207,6 +298,8 @@ export default function TemplateCreationWizard({ projectName, onBack, onCancel, 
             <div><span>Nom</span><strong>{brief.tournament.name}</strong><small>{brief.tournament.subtitle || 'Sans sous-titre'}</small></div>
             <div><span>Direction artistique</span><strong>{selectedFamily?.label}</strong><small>{generatedIntensityLabels[intensityIndex]}</small></div>
             <div><span>Composition</span><strong>{selectedLayout?.label}</strong><small>Top 1 à {brief.composition.winnerDominance}% · densité {brief.composition.density}%</small></div>
+            <div><span>Cases</span><strong>{selectedShape?.[1]}</strong><small>{FRAME_STYLES.find(([id]) => id === brief.panels.frameStyle)?.[1]} · pseudos {LABEL_POSITIONS.find(([id]) => id === brief.panels.labelPosition)?.[1].toLowerCase()}</small></div>
+            <div><span>Typographie</span><strong>{selectedTypography?.[1]}</strong><small>Placements {RANK_STYLES.find(([id]) => id === brief.typography.rankStyle)?.[1].toLowerCase()} · bandeau {HEADER_STYLES.find(([id]) => id === brief.typography.headerStyle)?.[1].toLowerCase()}</small></div>
             <div><span>Palette</span><strong>{COLOR_MODES.find(([id]) => id === brief.colors.mode)?.[1]}</strong><div className="wizard-palette-preview">{palettePreview.map((color, index) => <span key={`${color}-${index}`} style={{ background: color }} />)}</div></div>
           </div>
         )}

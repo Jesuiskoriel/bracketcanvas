@@ -67,6 +67,10 @@ const layouts = [
   { id: 'cascade', label: 'Cascade', boxes: [[0, 62, 320, 208], [324, 62, 220, 150], [548, 62, 138, 150], [324, 216, 362, 80], [0, 300, 156, 86], [160, 300, 156, 86], [320, 300, 176, 86], [500, 300, 186, 86]] },
   { id: 'split-screen', label: 'Split screen', boxes: [[0, 62, 360, 210], [364, 62, 322, 102], [364, 168, 322, 104], [0, 276, 220, 110], [224, 276, 112, 110], [340, 276, 112, 110], [456, 276, 112, 110], [572, 276, 114, 110]] },
   { id: 'experimental', label: 'Expérimental', boxes: [[218, 62, 300, 205], [0, 62, 214, 120], [522, 62, 164, 120], [0, 186, 214, 110], [218, 271, 145, 115], [367, 271, 151, 115], [522, 186, 164, 100], [522, 290, 164, 96]] },
+  { id: 'champion-left', label: 'Champion à gauche', boxes: [[0, 62, 310, 324], [314, 62, 184, 158], [502, 62, 184, 158], [314, 220, 372, 76], [314, 296, 90, 90], [408, 296, 90, 90], [502, 296, 90, 90], [596, 296, 90, 90]] },
+  { id: 'center-stage', label: 'Scène centrale', boxes: [[193, 62, 300, 208], [0, 62, 189, 132], [497, 62, 189, 132], [193, 274, 300, 112], [0, 198, 189, 90], [0, 292, 189, 94], [497, 198, 189, 90], [497, 292, 189, 94]] },
+  { id: 'broadcast', label: 'Broadcast', boxes: [[0, 62, 410, 220], [414, 62, 272, 108], [414, 174, 272, 108], [0, 286, 170, 100], [174, 286, 124, 100], [302, 286, 124, 100], [430, 286, 124, 100], [558, 286, 128, 100]] },
+  { id: 'staircase', label: 'Escalier', boxes: [[0, 62, 310, 210], [314, 62, 230, 136], [548, 62, 138, 136], [314, 202, 372, 92], [0, 276, 152, 110], [156, 276, 152, 110], [312, 298, 184, 88], [500, 298, 186, 88]] },
 ]
 
 const legacyLayoutAliases = {
@@ -83,6 +87,8 @@ export const createDefaultGenerationBrief = (tournamentName = '') => ({
   tournament: { name: tournamentName, subtitle: '', date: '', entrants: '', eventType: 'weekly' },
   artDirection: { family: 'surprise', intensity: 50 },
   composition: { layoutFamily: 'auto', winnerDominance: 72, density: 55, symmetry: 42 },
+  panels: { shapeStyle: 'irregular', frameStyle: 'double', labelPosition: 'bottom', labelWidth: 76, texture: 'auto', textureScale: 50 },
+  typography: { family: 'auto', rankStyle: 'impact', headerStyle: 'band', backgroundEnergy: 55 },
   colors: { mode: 'auto', mood: 'dark', primary: '#246BFD', secondary: '#7C3AED', accent: '#22D3EE', background: '#07111D', harmony: 'analogous' },
 })
 
@@ -92,6 +98,8 @@ const normalizeBrief = (brief = {}) => {
     tournament: { ...defaults.tournament, ...(brief.tournament || {}) },
     artDirection: { ...defaults.artDirection, ...(brief.artDirection || {}) },
     composition: { ...defaults.composition, ...(brief.composition || {}) },
+    panels: { ...defaults.panels, ...(brief.panels || {}) },
+    typography: { ...defaults.typography, ...(brief.typography || {}) },
     colors: { ...defaults.colors, ...(brief.colors || {}) },
   }
 }
@@ -115,6 +123,25 @@ const shapePresets = [
   [[0, 10], [100, 0], [92, 100], [0, 88]], [[8, 0], [100, 10], [100, 100], [0, 90]],
   [[0, 0], [100, 8], [95, 92], [8, 100]], [[6, 8], [94, 0], [100, 88], [0, 100]],
 ]
+
+const cutCornerPresets = [
+  [[7, 0], [94, 0], [100, 8], [100, 93], [92, 100], [0, 100], [0, 9]],
+  [[0, 0], [92, 0], [100, 10], [100, 100], [8, 100], [0, 91]],
+  [[9, 0], [100, 0], [100, 91], [92, 100], [7, 100], [0, 91], [0, 8]],
+]
+
+const diagonalPresets = [
+  [[10, 0], [100, 0], [90, 100], [0, 100]],
+  [[0, 0], [90, 0], [100, 100], [10, 100]],
+  [[8, 0], [100, 8], [92, 100], [0, 92]],
+]
+
+const resolveShapePreset = (style, index, offset) => {
+  if (style === 'clean') return [[0, 0], [100, 0], [100, 100], [0, 100]]
+  if (style === 'cut-corners') return cutCornerPresets[(index + offset) % cutCornerPresets.length]
+  if (style === 'diagonal') return diagonalPresets[(index + offset) % diagonalPresets.length]
+  return shapePresets[(index + offset) % shapePresets.length]
+}
 
 const clipPathFromCanvasPoints = (points, box) => `polygon(${points.map(([x, y]) => {
   const localX = ((x - box.x) / box.width) * 100
@@ -146,7 +173,7 @@ const pointsFromShape = (box, shape, symmetry) => {
   })
 }
 
-const createPattern = (family, palette, index, intensity = 50) => {
+const createPattern = (family, palette, index, intensity = 50, panelOptions = {}) => {
   const base = index === 0 ? palette.winner : index % 2 ? palette.primary : palette.secondary
   const accent = palette.accent
   const ink = palette.outline
@@ -166,11 +193,16 @@ const createPattern = (family, palette, index, intensity = 50) => {
     circuit: `<pattern id="${patternId}" width="34" height="34" patternUnits="userSpaceOnUse"><rect width="34" height="34" fill="${base}"/><path d="M0 8H20V24H34M8 0V15H26V34" fill="none" stroke="${accent}" opacity="${opacity}"/><circle cx="20" cy="8" r="2" fill="${accent}"/></pattern>`,
     mixed: `<pattern id="${patternId}" width="32" height="32" patternUnits="userSpaceOnUse"><rect width="32" height="32" fill="${base}"/><circle cx="8" cy="8" r="3" fill="${accent}" opacity="${opacity}"/><path d="M16 32L32 16" stroke="${ink}" stroke-width="3" opacity=".3"/></pattern>`,
   }
-  return svgDataUrl(`<svg xmlns="http://www.w3.org/2000/svg" width="320" height="220" viewBox="0 0 320 220"><defs>${patterns[family.pattern]}</defs><rect width="320" height="220" fill="url(#${patternId})"/><path d="M-40 190L220 -20M90 240L350 30" stroke="${accent}" stroke-width="10" opacity="${opacity}"/></svg>`)
+  const requestedPattern = panelOptions.texture === 'auto' ? family.pattern : panelOptions.texture
+  const pattern = patterns[requestedPattern] || patterns[family.pattern]
+  const textureScale = (0.7 + clamp(Number(panelOptions.textureScale), 0, 100) * 0.008).toFixed(2)
+  const scaledPattern = pattern.replace('<pattern ', `<pattern patternTransform="scale(${textureScale})" `)
+  return svgDataUrl(`<svg xmlns="http://www.w3.org/2000/svg" width="320" height="220" viewBox="0 0 320 220"><defs>${scaledPattern}</defs><rect width="320" height="220" fill="url(#${patternId})"/><path d="M-40 190L220 -20M90 240L350 30" stroke="${accent}" stroke-width="10" opacity="${opacity}"/></svg>`)
 }
 
-const familyArtwork = (family, palette, intensity) => {
-  const opacity = (0.08 + clamp(intensity, 0, 100) * 0.0022).toFixed(2)
+const familyArtwork = (family, palette, intensity, backgroundEnergy = 55) => {
+  const energy = clamp(Number(backgroundEnergy), 0, 100) / 100
+  const opacity = ((0.05 + clamp(intensity, 0, 100) * 0.0016) * (0.45 + energy)).toFixed(2)
   const common = `<circle cx="343" cy="235" r="170" fill="none" stroke="${palette.primary}" stroke-width="24" opacity="${opacity}"/><path d="M30 350L260 70M410 370L660 90" stroke="${palette.secondary}" stroke-width="9" opacity="${opacity}"/>`
   if (family.id === 'editorial' || family.id === 'premium') return `<rect x="0" width="22" height="386" fill="${palette.primary}"/><text x="654" y="365" fill="${palette.outline}" opacity="${opacity}" font-family="serif" font-size="84" font-weight="700" text-anchor="end">08</text>`
   if (family.id === 'cyber' || family.id === 'scifi') return `<path d="M0 330L180 140L310 250L500 40L686 180" fill="none" stroke="${palette.accent}" stroke-width="2" opacity=".45"/><circle cx="545" cy="210" r="105" fill="none" stroke="${palette.secondary}" stroke-width="30" opacity="${opacity}"/>`
@@ -178,11 +210,24 @@ const familyArtwork = (family, palette, intensity) => {
   return common
 }
 
-const createBackground = (family, palette, intensity) => svgDataUrl(`<svg xmlns="http://www.w3.org/2000/svg" width="686" height="386" viewBox="0 0 686 386"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="${palette.background}"/><stop offset="1" stop-color="${palette.outline}"/></linearGradient></defs><rect width="686" height="386" fill="url(#bg)"/>${familyArtwork(family, palette, intensity)}<rect width="686" height="58" fill="${palette.surface}" opacity=".88"/><path d="M0 58H686" stroke="${palette.accent}" stroke-width="2"/></svg>`)
+const createHeaderArtwork = (style, palette) => {
+  if (style === 'split') return `<path d="M0 0H150L128 58H0ZM154 0H686V58H132Z" fill="${palette.surface}" opacity=".92"/><path d="M132 58L154 0" stroke="${palette.accent}" stroke-width="3"/>`
+  if (style === 'poster') return `<rect width="686" height="58" fill="${palette.surface}"/><path d="M8 7H678V51H8Z" fill="none" stroke="${palette.accent}" stroke-width="1.5"/><path d="M0 54H686" stroke="${palette.primary}" stroke-width="7"/>`
+  if (style === 'minimal') return `<rect width="686" height="58" fill="${palette.background}" opacity=".78"/><path d="M24 54H662" stroke="${palette.accent}" stroke-width="1"/>`
+  return `<rect width="686" height="58" fill="${palette.surface}" opacity=".88"/><path d="M0 58H686" stroke="${palette.accent}" stroke-width="2"/>`
+}
 
-const createOverlay = (slots, family, palette, intensity) => {
+const createBackground = (family, palette, intensity, brief) => svgDataUrl(`<svg xmlns="http://www.w3.org/2000/svg" width="686" height="386" viewBox="0 0 686 386"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="${palette.background}"/><stop offset="1" stop-color="${palette.outline}"/></linearGradient></defs><rect width="686" height="386" fill="url(#bg)"/>${familyArtwork(family, palette, intensity, brief.typography.backgroundEnergy)}${createHeaderArtwork(brief.typography.headerStyle, palette)}</svg>`)
+
+const createOverlay = (slots, family, palette, intensity, frameStyle = 'double') => {
   const strokeWidth = family.frameWidth + Math.round(clamp(intensity, 0, 100) / 38)
-  const polygons = slots.map((slot) => `<polygon points="${slot.points.map((point) => point.join(',')).join(' ')}" fill="none" stroke="${palette.outline}" stroke-width="${strokeWidth + 3}" stroke-linejoin="round"/><polygon points="${slot.points.map((point) => point.join(',')).join(' ')}" fill="none" stroke="${palette.accent}" stroke-width="1.5" stroke-linejoin="round" opacity=".9"/>`).join('')
+  const polygons = slots.map((slot) => {
+    const points = slot.points.map((point) => point.join(',')).join(' ')
+    if (frameStyle === 'accent') return `<polygon points="${points}" fill="none" stroke="${palette.accent}" stroke-width="${strokeWidth + 2}" stroke-linejoin="round"/>`
+    if (frameStyle === 'ink') return `<polygon points="${points}" fill="none" stroke="${palette.outline}" stroke-width="${strokeWidth + 5}" stroke-linejoin="round"/>`
+    if (frameStyle === 'fine') return `<polygon points="${points}" fill="none" stroke="${palette.text}" stroke-width="1.5" stroke-linejoin="round" opacity=".85"/>`
+    return `<polygon points="${points}" fill="none" stroke="${palette.outline}" stroke-width="${strokeWidth + 3}" stroke-linejoin="round"/><polygon points="${points}" fill="none" stroke="${palette.accent}" stroke-width="1.5" stroke-linejoin="round" opacity=".9"/>`
+  }).join('')
   return svgDataUrl(`<svg xmlns="http://www.w3.org/2000/svg" width="686" height="386" viewBox="0 0 686 386">${polygons}<path d="M0 59H686" stroke="${palette.outline}" stroke-width="6"/><path d="M0 58H686" stroke="${palette.accent}" stroke-width="1.5"/></svg>`)
 }
 
@@ -192,24 +237,29 @@ const createSlots = (layout, family, palette, random, brief) => {
   const boxes = createBoxes(layout, brief.composition)
   const shapeOffset = Math.floor(random() * shapePresets.length)
   const effectiveIntensity = clamp(Number(brief.artDirection.intensity) + (eventTypeInfluence[brief.tournament.eventType] || 0), 0, 100)
+  const typography = resolveTypography(family, brief)
   return boxes.map((values, index) => {
     const [x, y, width, height] = values
     const box = { x, y, width, height }
-    const points = pointsFromShape(box, shapePresets[(index + shapeOffset) % shapePresets.length], brief.composition.symmetry)
+    const points = pointsFromShape(box, resolveShapePreset(brief.panels.shapeStyle, index, shapeOffset), brief.composition.symmetry)
     const nameHeight = Math.min(22, Math.max(17, Math.round(height * 0.19)))
-    const nameWidth = Math.max(70, Math.round(width * (index === 0 ? 0.67 : 0.76)))
+    const requestedLabelWidth = clamp(Number(brief.panels.labelWidth), 45, 100) / 100
+    const nameWidth = Math.max(70, Math.round(width * (index === 0 ? Math.max(.58, requestedLabelWidth - .08) : requestedLabelWidth)))
     const nameX = x + Math.round((width - nameWidth) / 2)
-    const nameY = y + height - nameHeight - 4
+    const labelPosition = brief.panels.labelPosition === 'alternating'
+      ? (index % 2 ? 'top' : 'bottom')
+      : brief.panels.labelPosition
+    const nameY = labelPosition === 'top' ? y + 4 : y + height - nameHeight - 4
     const rankOnRight = index % 3 === 1
     const rankSize = index === 0 ? 43 : index < 3 ? 31 : index === 3 ? 28 : 24
     return {
       id: SLOT_IDS[index], placement: EXPECTED_PLACEMENTS[index], ...box,
       zIndex: index === 0 ? 12 : index < 3 ? 10 : index === 3 ? 9 : 8,
       points, clipPath: clipPathFromCanvasPoints(points, box),
-      texture: createPattern(family, palette, index, effectiveIntensity),
+      texture: createPattern(family, palette, index, effectiveIntensity, brief.panels),
       podiumTone: index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'bronze' : undefined,
       rank: { x: x + (rankOnRight ? width - 24 : 24), y: y + Math.min(30, height * 0.24), size: rankSize, color: index === 0 ? palette.winner : palette.text, layer: 'front' },
-      nameZone: { x: nameX, y: nameY, width: nameWidth, height: nameHeight, align: 'center', fontSize: index === 0 ? 12 : 10, background: index === 0 ? palette.winner : palette.accent, color: palette.outline, rotation: index % 2 ? -1 : 1, fontFamily: family.labelFont, fontWeight: 800, letterSpacing: family.id === 'arcade' ? '.02em' : '.035em' },
+      nameZone: { x: nameX, y: nameY, width: nameWidth, height: nameHeight, align: 'center', fontSize: index === 0 ? 12 : 10, background: index === 0 ? palette.winner : palette.accent, color: palette.outline, rotation: index % 2 ? -1 : 1, fontFamily: typography.label, fontWeight: 800, letterSpacing: family.id === 'arcade' ? '.02em' : '.035em' },
       autoPlacement: createAutoPlacement(width, height),
     }
   })
@@ -251,14 +301,33 @@ const resolveLayout = (id, random) => {
   return layouts.find((layout) => layout.id === normalizedId) || pick(layouts, random)
 }
 
+const typographyFamilies = {
+  condensed: { title: 'Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif', label: 'Arial Narrow, Arial, sans-serif' },
+  serif: { title: 'Georgia, "Times New Roman", serif', label: 'Georgia, "Times New Roman", serif' },
+  mono: { title: 'ui-monospace, SFMono-Regular, Menlo, monospace', label: 'ui-monospace, SFMono-Regular, Menlo, monospace' },
+  geometric: { title: 'Arial Black, Arial, sans-serif', label: 'Arial, Helvetica, sans-serif' },
+}
+
+const resolveTypography = (family, brief) => typographyFamilies[brief.typography.family] || { title: family.font, label: family.labelFont }
+
 const createMetadata = (family, palette, brief) => {
   const hasSubtitle = Boolean(brief.tournament.subtitle)
+  const typography = resolveTypography(family, brief)
   return [
-    { id: 'eventName', x: 122, y: hasSubtitle ? 1 : 3, width: 486, height: hasSubtitle ? 35 : 50, zIndex: 5, fontSize: hasSubtitle ? 25 : family.id === 'editorial' ? 28 : 31, lineHeight: 1, align: 'center', color: palette.text, fontFamily: family.font, fontWeight: 900, fontStyle: ['manga', 'esport', 'street'].includes(family.id) ? 'italic' : 'normal', letterSpacing: family.id === 'arcade' ? '.03em' : '.015em', textTransform: 'uppercase', textShadow: `2px 2px 0 ${palette.outline}` },
-    ...(hasSubtitle ? [{ id: 'subtitle', x: 185, y: 35, width: 360, height: 16, zIndex: 5, fontSize: 8, lineHeight: 1, align: 'center', color: palette.textMuted, fontFamily: family.labelFont, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase' }] : []),
-    { id: 'date', x: 10, y: 7, width: 102, height: 19, zIndex: 5, fontSize: 10, lineHeight: 1, align: 'left', color: palette.text, fontFamily: family.labelFont, fontWeight: 800, letterSpacing: '.02em' },
-    { id: 'participantCount', x: 10, y: 32, width: 107, height: 18, zIndex: 5, fontSize: 9, lineHeight: 1, align: 'left', color: palette.accent, fontFamily: family.labelFont, fontWeight: 800, letterSpacing: '.02em' },
+    { id: 'eventName', x: 122, y: hasSubtitle ? 1 : 3, width: 486, height: hasSubtitle ? 35 : 50, zIndex: 5, fontSize: hasSubtitle ? 25 : family.id === 'editorial' ? 28 : 31, lineHeight: 1, align: 'center', color: palette.text, fontFamily: typography.title, fontWeight: 900, fontStyle: ['manga', 'esport', 'street'].includes(family.id) && brief.typography.family === 'auto' ? 'italic' : 'normal', letterSpacing: family.id === 'arcade' ? '.03em' : '.015em', textTransform: 'uppercase', textShadow: `2px 2px 0 ${palette.outline}` },
+    ...(hasSubtitle ? [{ id: 'subtitle', x: 185, y: 35, width: 360, height: 16, zIndex: 5, fontSize: 8, lineHeight: 1, align: 'center', color: palette.textMuted, fontFamily: typography.label, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase' }] : []),
+    { id: 'date', x: 10, y: 7, width: 102, height: 19, zIndex: 5, fontSize: 10, lineHeight: 1, align: 'left', color: palette.text, fontFamily: typography.label, fontWeight: 800, letterSpacing: '.02em' },
+    { id: 'participantCount', x: 10, y: 32, width: 107, height: 18, zIndex: 5, fontSize: 9, lineHeight: 1, align: 'left', color: palette.accent, fontFamily: typography.label, fontWeight: 800, letterSpacing: '.02em' },
   ]
+}
+
+const createRankStyle = (family, palette, brief) => {
+  const typography = resolveTypography(family, brief)
+  const base = { fontFamily: typography.title, fontWeight: 900, fontStyle: ['manga', 'esport', 'street'].includes(family.id) && brief.typography.family === 'auto' ? 'italic' : 'normal' }
+  if (brief.typography.rankStyle === 'clean') return { ...base, WebkitTextStroke: `1px ${palette.outline}`, textShadow: 'none' }
+  if (brief.typography.rankStyle === 'badge') return { ...base, color: palette.outline, background: palette.winner, borderRadius: '999px', WebkitTextStroke: '0 transparent', textShadow: 'none', boxShadow: `0 2px 0 ${palette.outline}` }
+  if (brief.typography.rankStyle === 'shadow') return { ...base, WebkitTextStroke: `1px ${palette.outline}`, textShadow: `5px 5px 0 ${palette.secondary}` }
+  return { ...base, WebkitTextStroke: `${family.id === 'editorial' ? 1 : 2}px ${palette.outline}`, textShadow: `2px 2px 0 ${palette.secondary}, 4px 4px 0 ${palette.outline}AA` }
 }
 
 const buildTemplate = ({ id, name, family, layout, palette, seed, brief }) => {
@@ -266,7 +335,7 @@ const buildTemplate = ({ id, name, family, layout, palette, seed, brief }) => {
   const slots = createSlots(layout, family, palette, random, brief)
   const intensity = clamp(Number(brief.artDirection.intensity) + (eventTypeInfluence[brief.tournament.eventType] || 0), 0, 100)
   return {
-    id, revision: 2, generated: true, generatorVersion: 2,
+    id, revision: 3, generated: true, generatorVersion: 3,
     familyId: family.id, familyName: family.label, familyHue: family.hue,
     layoutId: layout.id, layoutName: layout.label, seed, visualStyle: 'generated', name,
     width: WIDTH, height: HEIGHT, generationBrief: brief,
@@ -278,8 +347,8 @@ const buildTemplate = ({ id, name, family, layout, palette, seed, brief }) => {
     renderFilter: family.id === 'editorial' ? 'saturate(.88) contrast(1.05)' : 'saturate(1.08) contrast(1.07) drop-shadow(0 2px 1px rgba(0,0,0,.35))',
     slotTextureStyle: { filter: 'none' },
     slotShadeStyle: { background: `linear-gradient(180deg, transparent 38%, ${palette.outline}CC 100%)` },
-    rankStyle: { fontFamily: family.font, fontWeight: 900, fontStyle: ['manga', 'esport', 'street'].includes(family.id) ? 'italic' : 'normal', WebkitTextStroke: `${family.id === 'editorial' ? 1 : 2}px ${palette.outline}`, textShadow: `2px 2px 0 ${palette.secondary}, 4px 4px 0 ${palette.outline}AA` },
-    layers: [{ id: 'generated-background', src: createBackground(family, palette, intensity), zIndex: 0 }, { id: 'generated-frames', src: createOverlay(slots, family, palette, intensity), zIndex: 20 }],
+    rankStyle: createRankStyle(family, palette, brief),
+    layers: [{ id: 'generated-background', src: createBackground(family, palette, intensity, brief), zIndex: 0 }, { id: 'generated-frames', src: createOverlay(slots, family, palette, intensity, brief.panels.frameStyle), zIndex: 20 }],
     decorations: [], metadata: createMetadata(family, palette, brief), slots,
   }
 }
@@ -291,7 +360,7 @@ export const recolorGeneratedTemplate = (template, nextPalette, locks = template
   const intensity = clamp(Number(brief.artDirection.intensity) + (eventTypeInfluence[brief.tournament.eventType] || 0), 0, 100)
   const slots = template.slots.map((slot, index) => ({
     ...slot,
-    texture: createPattern(family, palette, index, intensity),
+    texture: createPattern(family, palette, index, intensity, brief.panels),
     rank: { ...slot.rank, color: index === 0 ? palette.winner : palette.text },
     nameZone: { ...slot.nameZone, background: index === 0 ? palette.winner : palette.accent, color: palette.outline },
   }))
@@ -299,8 +368,8 @@ export const recolorGeneratedTemplate = (template, nextPalette, locks = template
     ...template, palette, paletteLocks: locks, slots, slotTexture: slots[0].texture,
     canvasStyle: { ...template.canvasStyle, backgroundColor: palette.background },
     slotShadeStyle: { background: `linear-gradient(180deg, transparent 38%, ${palette.outline}CC 100%)` },
-    rankStyle: { ...template.rankStyle, WebkitTextStroke: `${family.id === 'editorial' ? 1 : 2}px ${palette.outline}`, textShadow: `2px 2px 0 ${palette.secondary}, 4px 4px 0 ${palette.outline}AA` },
-    layers: [{ id: 'generated-background', src: createBackground(family, palette, intensity), zIndex: 0 }, { id: 'generated-frames', src: createOverlay(slots, family, palette, intensity), zIndex: 20 }],
+    rankStyle: createRankStyle(family, palette, brief),
+    layers: [{ id: 'generated-background', src: createBackground(family, palette, intensity, brief), zIndex: 0 }, { id: 'generated-frames', src: createOverlay(slots, family, palette, intensity, brief.panels.frameStyle), zIndex: 20 }],
     metadata: createMetadata(family, palette, brief),
   }
 }
