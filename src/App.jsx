@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import PlayerEditor from './components/PlayerEditor.jsx'
 import PaletteEditor from './components/PaletteEditor.jsx'
+import AccountMenu from './components/AccountMenu.jsx'
 import ProjectSwitcher from './components/ProjectSwitcher.jsx'
 import ProjectTemplatePanel from './components/ProjectTemplatePanel.jsx'
 import StartggImporter from './components/StartggImporter.jsx'
@@ -30,6 +31,10 @@ import { exportTop8AsPsd } from './utils/exportPsd.js'
 import { calculateAutoPlacement } from './utils/autoPlacement.js'
 import { fileToDataUrl } from './utils/imageData.js'
 import { constrainRankPosition } from './utils/rankPosition.js'
+import {
+  loadCloudProjectCollection,
+  saveCloudProjectCollection,
+} from './services/accountApi.js'
 import './App.css'
 
 const DEFAULT_RENDER_TRANSFORM = {
@@ -257,10 +262,12 @@ const getAvailableCopyName = (name, projects) => {
   return `${baseName} ${copyNumber}`
 }
 
-function App() {
+function App({ currentUser, onLogout }) {
   const canvasRef = useRef(null)
   const saveTimeoutRef = useRef(null)
   const projectCollectionRef = useRef(null)
+  const cloudSaveQueueRef = useRef(Promise.resolve())
+  const cloudSaveGenerationRef = useRef(0)
   const [players, setPlayers] = useState(initialPlayers)
   const [selectedLayer, setSelectedLayer] = useState(INITIAL_SELECTED_LAYER)
   const [exportScale, setExportScale] = useState(4)
@@ -291,12 +298,53 @@ function App() {
     setProjectCollection(collection)
   }, [])
 
+  const syncCollectionToCloud = useCallback((collection) => {
+    const generation = cloudSaveGenerationRef.current + 1
+    cloudSaveGenerationRef.current = generation
+    setSaveStatus('Sauvegarde cloud…')
+
+    cloudSaveQueueRef.current = cloudSaveQueueRef.current
+      .catch(() => undefined)
+      .then(() => saveCloudProjectCollection(collection))
+      .then(() => {
+        if (cloudSaveGenerationRef.current === generation) {
+          setSaveStatus('Sauvegardé sur le cloud')
+        }
+      })
+      .catch((error) => {
+        console.error(error)
+        if (cloudSaveGenerationRef.current === generation) {
+          setSaveStatus('Sauvegarde locale — cloud indisponible')
+        }
+      })
+
+    return cloudSaveQueueRef.current
+  }, [])
+
+  const storeCollection = useCallback((collection, syncCloud = true) => {
+    const normalizedCollection = saveProjectCollection(collection, currentUser.id)
+    setCollection(normalizedCollection)
+    if (syncCloud) syncCollectionToCloud(normalizedCollection)
+    return normalizedCollection
+  }, [currentUser.id, setCollection, syncCollectionToCloud])
+
   useEffect(() => {
     let isActive = true
 
     const restoreProject = async () => {
       try {
-        let collection = loadProjectCollection()
+        let collection = null
+        let cloudIsAvailable = true
+
+        try {
+          const cloudWorkspace = await loadCloudProjectCollection()
+          collection = cloudWorkspace.collection
+        } catch (error) {
+          console.error(error)
+          cloudIsAvailable = false
+        }
+
+        if (!collection) collection = loadProjectCollection(currentUser.id)
         if (!collection) {
           collection = createProjectCollection(
             createPersistableProject({
@@ -308,15 +356,19 @@ function App() {
             }),
             INITIAL_EVENT_DETAILS.eventName,
           )
-          saveProjectCollection(collection)
         }
+        collection = storeCollection(collection, false)
+        if (cloudIsAvailable) await syncCollectionToCloud(collection)
         const activeProject = collection.projects[collection.activeProjectId]
         const restoredState = await restoreProjectState(activeProject?.data)
         if (!isActive) return
 
-        setCollection(collection)
         applyRestoredState(restoredState)
-        setSaveStatus('Sauvegardé')
+        setSaveStatus(
+          cloudIsAvailable
+            ? 'Sauvegardé sur le cloud'
+            : 'Sauvegarde locale — cloud indisponible',
+        )
       } catch (error) {
         console.error(error)
         if (isActive) setSaveStatus("Impossible de restaurer la sauvegarde locale.")
@@ -329,7 +381,7 @@ function App() {
     return () => {
       isActive = false
     }
-  }, [applyRestoredState, setCollection])
+  }, [applyRestoredState, currentUser.id, storeCollection, syncCollectionToCloud])
 
   const persistCurrentProject = useCallback(() => {
     if (!projectCollectionRef.current) return null
@@ -351,10 +403,7 @@ function App() {
           template: activeTemplate,
         }),
       )
-      saveProjectCollection(nextCollection)
-      setCollection(nextCollection)
-      setSaveStatus('Sauvegardé')
-      return nextCollection
+      return storeCollection(nextCollection)
     } catch (error) {
       console.error(error)
       setSaveStatus(getSaveErrorMessage(error))
@@ -362,7 +411,7 @@ function App() {
     } finally {
       setIsSaving(false)
     }
-  }, [activeTemplate, eventDetails, exportScale, players, selectedLayer, setCollection])
+  }, [activeTemplate, eventDetails, exportScale, players, selectedLayer, storeCollection])
 
   useEffect(() => {
     if (isRestoring || !projectCollectionRef.current) return undefined
@@ -662,10 +711,8 @@ function App() {
 
     try {
       const nextCollection = { ...collection, activeProjectId: projectId }
-      saveProjectCollection(nextCollection)
-      setCollection(nextCollection)
+      storeCollection(nextCollection)
       applyRestoredState(await restoreProjectState(project.data))
-      setSaveStatus('Sauvegardé')
     } catch (error) {
       console.error(error)
       setSaveStatus(
@@ -766,11 +813,9 @@ function App() {
           template,
         }),
       )
-      saveProjectCollection(nextCollection)
-      setCollection(nextCollection)
+      storeCollection(nextCollection)
       setPlayers(remappedPlayers)
       setActiveTemplate(template)
-      setSaveStatus('Sauvegardé')
     } catch (error) {
       console.error(error)
       setSaveStatus(getSaveErrorMessage(error))
@@ -814,9 +859,7 @@ function App() {
       },
     }
     try {
-      saveProjectCollection(nextCollection)
-      setCollection(nextCollection)
-      setSaveStatus('Sauvegardé')
+      storeCollection(nextCollection)
     } catch (error) {
       console.error(error)
       setSaveStatus(getSaveErrorMessage(error))
@@ -897,6 +940,20 @@ function App() {
     }
   }
 
+  const logout = async () => {
+    if (saveTimeoutRef.current) persistCurrentProject()
+    setIsSaving(true)
+    try {
+      await cloudSaveQueueRef.current.catch(() => undefined)
+      await onLogout()
+    } catch (error) {
+      console.error(error)
+      setSaveStatus('Déconnexion impossible. Réessaie.')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   const exportPsd = async () => {
     if (isExporting) return
 
@@ -936,6 +993,12 @@ function App() {
           <p className="app-intro">Compose le classement, ajuste les renders et exporte le visuel final.</p>
         </header>
 
+        <AccountMenu
+          user={currentUser}
+          disabled={isSaving || isRestoring}
+          onLogout={logout}
+        />
+
         <ProjectSwitcher
           projects={Object.values(projectCollection?.projects || {})}
           activeProjectId={projectCollection?.activeProjectId || ''}
@@ -968,7 +1031,7 @@ function App() {
         <section className="save-panel" aria-labelledby="save-title">
           <div>
             <p className="eyebrow">Projet</p>
-            <h2 id="save-title">Sauvegarde locale</h2>
+            <h2 id="save-title">Sauvegarde cloud</h2>
           </div>
           <div className="save-actions">
             <button

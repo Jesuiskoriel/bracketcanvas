@@ -1,0 +1,21 @@
+.git
+.gitignore
+.gitattributes
+node_modules
+dist
+data
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.psd
+references
+prop
+background.png
+texture.png
+src/App 2.css
+src/components/* 2.jsx
+src/data/* 2.js
+src/data/* 3.js
+src/utils/* 2.js
+src/assets/templates/comic/* 2.svg
+src/assets/templates/comic/* 3.svg

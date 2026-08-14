@@ -8,6 +8,13 @@ const isObject = (value) =>
 
 const nowIso = () => new Date().toISOString()
 
+const getScopedStorageKey = (scope) => {
+  const normalizedScope = typeof scope === 'string' ? scope.trim() : ''
+  return normalizedScope
+    ? `${WORKSPACES_STORAGE_KEY}:${normalizedScope}`
+    : WORKSPACES_STORAGE_KEY
+}
+
 const normalizeName = (name, fallback = FALLBACK_PROJECT_NAME) => {
   const normalized = typeof name === 'string' ? name.trim() : ''
   return normalized || fallback
@@ -87,24 +94,41 @@ const loadLegacyProject = () => {
   }
 }
 
-export const saveProjectCollection = (collection) => {
+export const saveProjectCollection = (collection, scope) => {
   const normalizedCollection = normalizeCollection(collection)
   if (!normalizedCollection) throw new Error('La collection de projets est invalide.')
   localStorage.setItem(
-    WORKSPACES_STORAGE_KEY,
+    getScopedStorageKey(scope),
     JSON.stringify(normalizedCollection),
   )
   return normalizedCollection
 }
 
-export const loadProjectCollection = () => {
-  const serializedCollection = localStorage.getItem(WORKSPACES_STORAGE_KEY)
+export const loadProjectCollection = (scope) => {
+  const scopedStorageKey = getScopedStorageKey(scope)
+  const serializedCollection = localStorage.getItem(scopedStorageKey)
   if (serializedCollection) {
     try {
       const collection = normalizeCollection(JSON.parse(serializedCollection))
       if (collection) return collection
     } catch {
       // Une sauvegarde illisible ne doit pas empêcher la migration de l'ancien format.
+    }
+  }
+
+  if (scope) {
+    const unscopedCollection = localStorage.getItem(WORKSPACES_STORAGE_KEY)
+    if (unscopedCollection) {
+      try {
+        const migratedCollection = normalizeCollection(JSON.parse(unscopedCollection))
+        if (migratedCollection) {
+          saveProjectCollection(migratedCollection, scope)
+          localStorage.removeItem(WORKSPACES_STORAGE_KEY)
+          return migratedCollection
+        }
+      } catch {
+        // Le cache historique illisible est ignoré.
+      }
     }
   }
 
@@ -116,7 +140,7 @@ export const loadProjectCollection = () => {
     FALLBACK_PROJECT_NAME,
   )
   const migratedCollection = createProjectCollection(legacyProject, projectName)
-  saveProjectCollection(migratedCollection)
+  saveProjectCollection(migratedCollection, scope)
   localStorage.removeItem(LEGACY_STORAGE_KEY)
   return migratedCollection
 }

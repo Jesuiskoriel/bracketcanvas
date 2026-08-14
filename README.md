@@ -1,13 +1,18 @@
 # BracketCanvas
 
-Application web locale React/Vite pour composer progressivement des visuels Top 8 de tournois Super Smash Bros. Ultimate.
+Application React/Vite pour composer des visuels Top 8 de tournois Super Smash Bros. Ultimate. BracketCanvas inclut des comptes privés, plusieurs projets par utilisateur et une sauvegarde synchronisée côté serveur.
 
 ## Lancer le projet
 
 ```bash
 npm install
+# Terminal 1 : API locale
+npm run dev:api
+# Terminal 2 : interface Vite
 npm run dev
 ```
+
+L’API de développement écoute sur le port `3001` et Vite lui transmet automatiquement les routes `/api`.
 
 La version actuelle contient huit slots configurables, la bibliothèque locale des personnages et les réglages X/Y/zoom/flip. Le template « Zero — Comic Top 8 » utilise une direction pop-art rouge/noir, des textures halftone et des formes SVG éditables dont les coordonnées sont centralisées dans `src/data/template.js`. Les chiffres de placement disposent de réglages X/Y, taille, couleur et profondeur. Le fichier `Top 8 Zero.psd` reste l’archive de la direction artistique précédente.
 
@@ -15,15 +20,29 @@ La version actuelle contient huit slots configurables, la bibliothèque locale d
 
 Les renders `alt-1` en style fresque proviennent des [Mural Isolations d’ElevenZM](https://www.deviantart.com/elevenzm/gallery/70115610/mural-isolations-super-smash-bros-ultimate). Les illustrations originales « Everyone is Here » sont de Yusuke Nakano.
 
-Currently, two official plugins are available:
+## Comptes et sauvegardes
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Les mots de passe sont dérivés avec `scrypt` et un sel aléatoire propre à chaque compte.
+- Les sessions utilisent un cookie `HttpOnly`, `SameSite=Lax` et `Secure` en production.
+- Chaque utilisateur possède une collection de projets indépendante dans SQLite.
+- Les renders SSBU restent des assets statiques partagés ; seules leurs références sont sauvegardées.
+- Les logos importés et tous les réglages du canvas sont conservés dans le workspace privé.
 
-## React Compiler
+La base est créée par défaut dans `data/bracketcanvas.sqlite`. Ce dossier est ignoré par Git et doit être sauvegardé sur le serveur.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Déploiement Docker
 
-## Expanding the Oxlint configuration
+Le build de production inclut toute la bibliothèque de renders (environ 1,1 Go). Prévoir au moins 3 Go d’espace disque libre pendant la construction de l’image.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+```bash
+docker compose build
+docker compose up -d
+```
+
+L’application écoute par défaut sur le port `3000`. En production, place-la derrière un reverse proxy HTTPS afin que le cookie de session sécurisé fonctionne correctement. Les comptes et projets sont conservés dans le volume Docker `bracketcanvas_data`.
+
+Pour créer une copie de sauvegarde cohérente de SQLite :
+
+```bash
+docker compose exec bracketcanvas node -e "const {DatabaseSync}=require('node:sqlite');const db=new DatabaseSync('/app/data/bracketcanvas.sqlite');db.exec(\"VACUUM INTO '/app/data/bracketcanvas-backup.sqlite'\")"
+```

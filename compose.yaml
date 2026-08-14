@@ -1,0 +1,20 @@
+name: bracketcanvas
+
+services:
+  bracketcanvas:
+    build:
+      context: .
+    image: bracketcanvas:latest
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_PATH: /app/data/bracketcanvas.sqlite
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    volumes:
+      - bracketcanvas_data:/app/data
+
+volumes:
+  bracketcanvas_data:
