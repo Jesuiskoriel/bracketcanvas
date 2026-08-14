@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import App from './App.jsx'
 import AuthScreen from './components/AuthScreen.jsx'
 import BetaWelcomeModal from './components/BetaWelcomeModal.jsx'
+import ThemeToggle from './components/ThemeToggle.jsx'
 import {
   getSession,
   loginAccount,
@@ -10,6 +11,13 @@ import {
 } from './services/accountApi.js'
 
 export default function Root() {
+  const [theme, setTheme] = useState(() => {
+    try {
+      return localStorage.getItem('bracketcanvas:theme') === 'light' ? 'light' : 'dark'
+    } catch {
+      return 'dark'
+    }
+  })
   const [showBetaWelcome, setShowBetaWelcome] = useState(() => {
     try {
       return localStorage.getItem('bracketcanvas:beta-welcome:v1') !== 'seen'
@@ -20,6 +28,16 @@ export default function Root() {
   const [user, setUser] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [sessionError, setSessionError] = useState('')
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    document.documentElement.style.colorScheme = theme
+    try {
+      localStorage.setItem('bracketcanvas:theme', theme)
+    } catch {
+      // Le thème reste actif pour la session si le stockage est indisponible.
+    }
+  }, [theme])
 
   useEffect(() => {
     let isActive = true
@@ -83,6 +101,7 @@ export default function Root() {
 
   return (
     <>
+      <ThemeToggle theme={theme} onChange={setTheme} />
       {content}
       {showBetaWelcome && <BetaWelcomeModal onClose={closeBetaWelcome} />}
     </>
