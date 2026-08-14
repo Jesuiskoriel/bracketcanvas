@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import App from './App.jsx'
 import AuthScreen from './components/AuthScreen.jsx'
+import BetaWelcomeModal from './components/BetaWelcomeModal.jsx'
 import {
   getSession,
   loginAccount,
@@ -9,6 +10,13 @@ import {
 } from './services/accountApi.js'
 
 export default function Root() {
+  const [showBetaWelcome, setShowBetaWelcome] = useState(() => {
+    try {
+      return localStorage.getItem('bracketcanvas:beta-welcome:v1') !== 'seen'
+    } catch {
+      return true
+    }
+  })
   const [user, setUser] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [sessionError, setSessionError] = useState('')
@@ -45,23 +53,38 @@ export default function Root() {
     setUser(null)
   }
 
+  const closeBetaWelcome = () => {
+    try {
+      localStorage.setItem('bracketcanvas:beta-welcome:v1', 'seen')
+    } catch {
+      // La fenêtre reste fermée pour la session si le stockage est indisponible.
+    }
+    setShowBetaWelcome(false)
+  }
+
+  let content
   if (isLoading) {
-    return (
+    content = (
       <main className="session-loading" aria-live="polite">
         <div className="session-loading-mark">BC</div>
         <p>Ouverture de ton espace…</p>
       </main>
     )
-  }
-
-  if (!user) {
-    return (
+  } else if (!user) {
+    content = (
       <>
         <AuthScreen onLogin={login} onRegister={register} />
         {sessionError && <p className="session-error" role="alert">{sessionError}</p>}
       </>
     )
+  } else {
+    content = <App currentUser={user} onLogout={logout} />
   }
 
-  return <App currentUser={user} onLogout={logout} />
+  return (
+    <>
+      {content}
+      {showBetaWelcome && <BetaWelcomeModal onClose={closeBetaWelcome} />}
+    </>
+  )
 }

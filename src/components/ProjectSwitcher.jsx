@@ -3,30 +3,15 @@ import TemplateCreationWizard from './TemplateCreationWizard.jsx'
 
 const PROJECT_NAME_MAX_LENGTH = 64
 
-function DiceIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <rect x="3.5" y="3.5" width="17" height="17" rx="3" />
-      <circle cx="8" cy="8" r="1" />
-      <circle cx="16" cy="8" r="1" />
-      <circle cx="12" cy="12" r="1" />
-      <circle cx="8" cy="16" r="1" />
-      <circle cx="16" cy="16" r="1" />
-    </svg>
-  )
-}
-
 function ProjectDialog({ mode, initialName, onCancel, onSubmit, required = false }) {
   const [name, setName] = useState(initialName)
   const [step, setStep] = useState('name')
   const [error, setError] = useState('')
   const inputRef = useRef(null)
-  const designHeadingRef = useRef(null)
   const isCreateMode = mode === 'create'
 
   useEffect(() => {
     if (step === 'name') inputRef.current?.focus()
-    else if (step === 'design') designHeadingRef.current?.focus()
   }, [step])
 
   useEffect(() => {
@@ -46,13 +31,8 @@ function ProjectDialog({ mode, initialName, onCancel, onSubmit, required = false
       inputRef.current?.focus()
       return
     }
-    if (isCreateMode) setStep('design')
+    if (isCreateMode) setStep('wizard')
     else onSubmit(normalizedName)
-  }
-
-  const chooseDesign = (templateChoice) => {
-    if (templateChoice === 'generate') setStep('wizard')
-    else onSubmit(name.trim(), templateChoice)
   }
 
   return (
@@ -71,11 +51,11 @@ function ProjectDialog({ mode, initialName, onCancel, onSubmit, required = false
         {step === 'name' ? (
           <>
             <header>
-              <p className="eyebrow">{required ? 'Bienvenue dans BracketCanvas' : isCreateMode ? 'Étape 1 sur 2' : 'Workspace'}</p>
+              <p className="eyebrow">{required ? 'Bienvenue dans BracketCanvas' : isCreateMode ? 'Création' : 'Workspace'}</p>
               <h2 id="project-dialog-title">
                 {required ? 'Crée ton premier canvas' : isCreateMode ? 'Nouveau projet' : 'Renommer le projet'}
               </h2>
-              {required && <p className="project-dialog-intro">Commence par donner un nom à ton projet. Tu choisiras son design juste après.</p>}
+              {required && <p className="project-dialog-intro">Commence par donner un nom à ton projet. Tu créeras ensuite son identité visuelle.</p>}
             </header>
             <form onSubmit={continueWithName}>
               <label className="text-control project-name-control" htmlFor="project-name">
@@ -102,34 +82,10 @@ function ProjectDialog({ mode, initialName, onCancel, onSubmit, required = false
               </div>
             </form>
           </>
-        ) : step === 'design' ? (
-          <>
-            <header>
-              <p className="eyebrow">Étape 2 sur 2</p>
-              <h2 id="project-dialog-title" ref={designHeadingRef} tabIndex="-1">
-                Choisir le design du projet
-              </h2>
-              <p className="project-dialog-intro">Le choix reste propre à « {name.trim()} ».</p>
-            </header>
-            <div className="project-design-options">
-              <button type="button" onClick={() => chooseDesign('zero')}>
-                <span className="project-design-mark project-design-mark-zero">Z</span>
-                <span><strong>Template Zero</strong><small>Utiliser le design actuel, sans aucune modification.</small></span>
-              </button>
-              <button type="button" onClick={() => chooseDesign('generate')}>
-                <span className="project-design-mark"><DiceIcon /></span>
-                <span><strong>Générer un nouveau template</strong><small>Créer localement une nouvelle DA et un nouveau layout.</small></span>
-              </button>
-            </div>
-            <div className="project-dialog-actions project-dialog-actions-design">
-              <button type="button" onClick={() => setStep('name')}>Retour</button>
-              {!required && <button type="button" onClick={onCancel}>Annuler</button>}
-            </div>
-          </>
         ) : (
           <TemplateCreationWizard
             projectName={name.trim()}
-            onBack={() => setStep('design')}
+            onBack={() => setStep('name')}
             onCancel={onCancel}
             required={required}
             onSubmit={(brief, previewSeed) =>

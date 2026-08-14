@@ -19,7 +19,7 @@ const STEPS = [
 ]
 
 const EVENT_TYPES = [
-  ['weekly', 'Weekly local'], ['major', 'Major'], ['invitational', 'Invitational'],
+  ['weekly', 'Weekly'], ['major', 'Major'], ['invitational', 'Invitational'],
   ['arcadian', 'Arcadian'], ['crew', 'Crew Battle'], ['championship', 'Championship'],
   ['online', 'Online'], ['other', 'Autre'],
 ]

@@ -1,5 +1,5 @@
 import { toCanvas } from 'html-to-image'
-import { createExportFilename } from './exportPng.js'
+import { createExportFilename, downloadBlob } from './exportPng.js'
 
 const PAINT_SELECTOR = '[data-psd-key]'
 const EXPORT_FONT_SELECTOR = '.template-text, .player-name, .placement-number'
@@ -110,16 +110,6 @@ const createSlotMask = (slot, scale) => {
     positionRelativeToLayer: false,
     fromVectorData: false,
   }
-}
-
-const downloadPsd = (buffer, filename) => {
-  const blob = new Blob([buffer], { type: 'image/vnd.adobe.photoshop' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.download = filename
-  link.href = url
-  link.click()
-  setTimeout(() => URL.revokeObjectURL(url), 0)
 }
 
 export const exportTop8AsPsd = async ({
@@ -305,7 +295,10 @@ export const exportTop8AsPsd = async ({
 
     const { writePsd } = await import('ag-psd')
     const buffer = writePsd(psd, { compress: true, generateThumbnail: true })
-    downloadPsd(buffer, createExportFilename(eventName, 'psd'))
+    downloadBlob(
+      new Blob([buffer], { type: 'image/vnd.adobe.photoshop' }),
+      createExportFilename(eventName, 'psd'),
+    )
   } catch (error) {
     if (scale === 4) {
       throw new Error('La création du PSD x4 a manqué de mémoire. Réessaie en x2.', { cause: error })

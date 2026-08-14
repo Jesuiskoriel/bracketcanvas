@@ -71,13 +71,17 @@ const createExportNode = (canvasNode, width, height) => {
   return { exportNode, wrapper }
 }
 
-const downloadBlob = (blob, filename) => {
+export const downloadBlob = (blob, filename) => {
   const downloadUrl = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.download = filename
   link.href = downloadUrl
+  link.rel = 'noopener'
+  link.style.display = 'none'
+  document.body.append(link)
   link.click()
-  URL.revokeObjectURL(downloadUrl)
+  link.remove()
+  window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 10_000)
 }
 
 export const exportTop8AsPng = async ({

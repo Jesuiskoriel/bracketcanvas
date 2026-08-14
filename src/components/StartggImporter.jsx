@@ -155,7 +155,7 @@ function StartggImporter({ availableCharacterIds, onConfirm }) {
                           <span
                             key={character.name}
                             className={character.localId ? '' : 'is-unmapped'}
-                            title={character.localId ? `${character.games} game(s)` : 'Absent de la bibliothèque locale'}
+                            title={character.localId ? `${character.games} game(s)` : 'Absent de la bibliothèque de personnages'}
                           >
                             {character.name}
                             {!character.localId && ' (non reconnu)'}
@@ -197,4 +197,3 @@ function StartggImporter({ availableCharacterIds, onConfirm }) {
 }
 
 export default StartggImporter
-

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import PlayerEditor from './components/PlayerEditor.jsx'
-import ProductNotice from './components/ProductNotice.jsx'
 import PaletteEditor from './components/PaletteEditor.jsx'
 import AccountMenu from './components/AccountMenu.jsx'
 import ProjectSwitcher from './components/ProjectSwitcher.jsx'
@@ -245,8 +244,8 @@ const restoreProjectState = async (savedProject = {}) => {
 
 const getSaveErrorMessage = (error) =>
   isStorageQuotaError(error)
-    ? "Sauvegarde impossible : les logos dépassent l’espace local disponible."
-    : 'La sauvegarde locale a échoué.'
+    ? "Sauvegarde impossible : les logos dépassent l’espace disponible."
+    : 'La sauvegarde a échoué.'
 
 const cloneProjectData = (data) => {
   if (globalThis.structuredClone) return structuredClone(data)
@@ -316,7 +315,7 @@ function App({ currentUser, onLogout }) {
       .catch((error) => {
         console.error(error)
         if (cloudSaveGenerationRef.current === generation) {
-          setSaveStatus('Sauvegarde locale — cloud indisponible')
+          setSaveStatus('Cloud indisponible — modifications conservées sur cet appareil')
         }
       })
 
@@ -376,11 +375,11 @@ function App({ currentUser, onLogout }) {
             ? 'Crée ton premier projet'
             : cloudIsAvailable
             ? 'Sauvegardé sur le cloud'
-            : 'Sauvegarde locale — cloud indisponible',
+            : 'Cloud indisponible — modifications conservées sur cet appareil',
         )
       } catch (error) {
         console.error(error)
-        if (isActive) setSaveStatus("Impossible de restaurer la sauvegarde locale.")
+        if (isActive) setSaveStatus("Impossible de restaurer la sauvegarde.")
       } finally {
         if (isActive) setIsRestoring(false)
       }
@@ -1008,10 +1007,7 @@ function App({ currentUser, onLogout }) {
         <header className="app-header">
           <div className="app-brand">
             <div>
-              <div className="product-heading-row">
-                <p className="eyebrow">BracketCanvas</p>
-                <span className="beta-badge">Bêta</span>
-              </div>
+              <p className="eyebrow">BracketCanvas</p>
               <h1 id="app-title">Éditeur Top 8</h1>
             </div>
           </div>
@@ -1126,7 +1122,6 @@ function App({ currentUser, onLogout }) {
           ))}
         </div>
 
-        <ProductNotice />
       </aside>
 
       <section className="preview-panel" aria-labelledby="preview-title">

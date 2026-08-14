@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import ProductNotice from './ProductNotice.jsx'
 
 export default function AuthScreen({ onLogin, onRegister }) {
   const [mode, setMode] = useState('login')
@@ -37,10 +36,7 @@ export default function AuthScreen({ onLogin, onRegister }) {
     <main className="auth-shell">
       <section className="auth-card" aria-labelledby="auth-title">
         <div className="auth-brand" aria-hidden="true">BC</div>
-        <div className="product-heading-row">
-          <p className="eyebrow">BracketCanvas</p>
-          <span className="beta-badge">Bêta</span>
-        </div>
+        <p className="eyebrow">BracketCanvas</p>
         <h1 id="auth-title">
           {isRegistering ? 'Créer ton espace' : 'Retrouve tes canvas'}
         </h1>
@@ -113,7 +109,6 @@ export default function AuthScreen({ onLogin, onRegister }) {
               : isRegistering ? 'Créer mon espace' : 'Se connecter'}
           </button>
         </form>
-        <ProductNotice compact />
       </section>
     </main>
   )
