@@ -56,7 +56,7 @@ const ChoiceCard = ({ selected, color, title, description, onClick }) => (
   </button>
 )
 
-export default function TemplateCreationWizard({ projectName, onBack, onCancel, onSubmit }) {
+export default function TemplateCreationWizard({ projectName, onBack, onCancel, onSubmit, required = false }) {
   const [brief, setBrief] = useState(() => createDefaultGenerationBrief(projectName))
   const [stepIndex, setStepIndex] = useState(0)
   const [error, setError] = useState('')
@@ -223,7 +223,7 @@ export default function TemplateCreationWizard({ projectName, onBack, onCancel, 
 
       <div className="project-dialog-actions wizard-actions">
         <button type="button" onClick={goBack}>Retour</button>
-        <button type="button" onClick={onCancel}>Annuler</button>
+        {!required && <button type="button" onClick={onCancel}>Annuler</button>}
         {step.id === 'summary'
           ? <button type="button" className="wizard-generate-button" onClick={() => onSubmit(brief, previewSeed)}>Générer mon template</button>
           : <button type="button" onClick={goNext}>Continuer</button>}

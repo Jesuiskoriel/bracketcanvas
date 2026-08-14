@@ -280,6 +280,7 @@ function App({ currentUser, onLogout }) {
   const [eventDetails, setEventDetails] = useState(INITIAL_EVENT_DETAILS)
   const [autoPlacementTarget, setAutoPlacementTarget] = useState('')
   const [projectCollection, setProjectCollection] = useState(null)
+  const [requiresProjectCreation, setRequiresProjectCreation] = useState(false)
   const [activeTemplate, setActiveTemplate] = useState(zeroTemplate)
   const [isPaletteEditorOpen, setIsPaletteEditorOpen] = useState(false)
   const playersRef = useRef(players)
@@ -335,6 +336,7 @@ function App({ currentUser, onLogout }) {
       try {
         let collection = null
         let cloudIsAvailable = true
+        let isNewWorkspace = false
 
         try {
           const cloudWorkspace = await loadCloudProjectCollection()
@@ -346,6 +348,7 @@ function App({ currentUser, onLogout }) {
 
         if (!collection) collection = loadProjectCollection(currentUser.id)
         if (!collection) {
+          isNewWorkspace = true
           collection = createProjectCollection(
             createPersistableProject({
               players: createInitialPlayers(),
@@ -358,14 +361,19 @@ function App({ currentUser, onLogout }) {
           )
         }
         collection = storeCollection(collection, false)
-        if (cloudIsAvailable) await syncCollectionToCloud(collection)
+        if (cloudIsAvailable && !isNewWorkspace) {
+          await syncCollectionToCloud(collection)
+        }
         const activeProject = collection.projects[collection.activeProjectId]
         const restoredState = await restoreProjectState(activeProject?.data)
         if (!isActive) return
 
         applyRestoredState(restoredState)
+        setRequiresProjectCreation(isNewWorkspace)
         setSaveStatus(
-          cloudIsAvailable
+          isNewWorkspace
+            ? 'Crée ton premier projet'
+            : cloudIsAvailable
             ? 'Sauvegardé sur le cloud'
             : 'Sauvegarde locale — cloud indisponible',
         )
@@ -414,7 +422,11 @@ function App({ currentUser, onLogout }) {
   }, [activeTemplate, eventDetails, exportScale, players, selectedLayer, storeCollection])
 
   useEffect(() => {
-    if (isRestoring || !projectCollectionRef.current) return undefined
+    if (
+      isRestoring ||
+      requiresProjectCreation ||
+      !projectCollectionRef.current
+    ) return undefined
 
     setSaveStatus('Sauvegarde…')
     saveTimeoutRef.current = window.setTimeout(persistCurrentProject, 600)
@@ -422,7 +434,7 @@ function App({ currentUser, onLogout }) {
       if (saveTimeoutRef.current) window.clearTimeout(saveTimeoutRef.current)
       saveTimeoutRef.current = null
     }
-  }, [isRestoring, persistCurrentProject])
+  }, [isRestoring, persistCurrentProject, requiresProjectCreation])
 
   const updatePlayer = useCallback((id, changes) => {
     setPlayers((currentPlayers) =>
@@ -741,7 +753,9 @@ function App({ currentUser, onLogout }) {
     previewSeed,
   ) => {
     if (isRestoring) return
-    const savedCollection = persistCurrentProject()
+    const savedCollection = requiresProjectCreation
+      ? projectCollectionRef.current
+      : persistCurrentProject()
     if (!savedCollection) return
 
     const template = templateChoice === 'generate'
@@ -766,14 +780,21 @@ function App({ currentUser, onLogout }) {
       template,
     })
     const newProject = createProjectRecord({ name, data: newProjectData })
-    const nextCollection = {
-      ...savedCollection,
-      activeProjectId: newProject.id,
-      projects: {
-        ...savedCollection.projects,
-        [newProject.id]: newProject,
-      },
-    }
+    const nextCollection = requiresProjectCreation
+      ? {
+          version: savedCollection.version,
+          activeProjectId: newProject.id,
+          projects: { [newProject.id]: newProject },
+        }
+      : {
+          ...savedCollection,
+          activeProjectId: newProject.id,
+          projects: {
+            ...savedCollection.projects,
+            [newProject.id]: newProject,
+          },
+        }
+    setRequiresProjectCreation(false)
     await loadProject(nextCollection, newProject.id)
   }
 
@@ -1008,6 +1029,7 @@ function App({ currentUser, onLogout }) {
           onRename={renameProject}
           onDuplicate={duplicateProject}
           onDelete={deleteProject}
+          forceCreate={requiresProjectCreation}
         />
 
         <ProjectTemplatePanel

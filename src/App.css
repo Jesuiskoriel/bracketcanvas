@@ -903,3 +903,368 @@
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
 }
+
+/* Interface 2026 — surfaces plus douces, moins de cadres et d'accents décoratifs. */
+.eyebrow {
+  color: var(--text-subtle);
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .045em;
+  text-transform: none;
+}
+
+.app-brand .eyebrow,
+.auth-card > .eyebrow { color: var(--accent); }
+
+.app-shell {
+  grid-template-columns: minmax(350px, 405px) minmax(0, 1fr);
+  gap: 0;
+  background: var(--background);
+}
+
+.editor-panel {
+  background: #0b1116;
+  border-right: 0;
+  box-shadow: 12px 0 35px rgba(0, 0, 0, .18);
+}
+
+.app-header {
+  padding: 30px 26px 22px;
+  border-bottom: 0;
+}
+
+.app-header h1 {
+  margin-top: 6px;
+  font-size: 1.6rem;
+  letter-spacing: -.035em;
+}
+
+.app-intro {
+  margin-top: 11px;
+  color: var(--text-muted);
+  font-size: .84rem;
+}
+
+.account-menu {
+  min-height: 64px;
+  margin: 0 16px 14px;
+  padding: 10px 12px;
+  background: var(--surface-raised);
+  border: 0;
+  border-radius: var(--radius-md);
+}
+
+.account-avatar {
+  color: #0b1717;
+  background: var(--accent-light);
+  box-shadow: none;
+}
+
+.account-menu button {
+  border-color: transparent;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, .035);
+}
+
+.project-switcher,
+.project-template-panel,
+.save-panel {
+  margin: 0 16px 12px;
+  padding: 17px;
+  background: var(--surface-raised);
+  border: 0;
+  border-radius: var(--radius-md);
+  box-shadow: none;
+}
+
+.project-template-panel { min-height: 76px; }
+
+.project-create-button,
+.project-secondary-actions button,
+.project-dialog-actions button,
+.project-template-panel button,
+.startgg-load-button,
+.startgg-dialog-actions button,
+.save-panel button,
+.auto-place-all-button,
+.auto-place-button,
+.layer-select-button,
+.export-controls select,
+.export-controls button,
+.palette-editor button {
+  border-radius: var(--radius-sm);
+}
+
+.project-create-button,
+.save-panel button,
+.startgg-load-button,
+.export-controls button:not(.export-psd-button) {
+  color: #0a1717;
+  background: var(--accent-light);
+  border-color: transparent;
+}
+
+.project-select-label select,
+.text-control input,
+.text-control select,
+.file-button,
+.remove-logo-button,
+.color-input-wrap {
+  border-color: transparent;
+  border-radius: var(--radius-sm);
+  background: var(--input);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .035);
+}
+
+.project-select-label select {
+  min-height: 48px;
+  border-left: 0;
+}
+
+.project-secondary-actions { gap: 7px; }
+.project-secondary-actions button { min-height: 40px; border-color: transparent; background: rgba(255, 255, 255, .035); }
+.project-secondary-actions .project-delete-button { border-color: transparent; }
+
+.template-editor,
+.startgg-importer {
+  margin: 0;
+  padding: 22px 26px 25px;
+  background: transparent;
+  border-bottom: 0;
+}
+
+.tournament-logo-control {
+  margin-top: 4px;
+  padding-top: 18px;
+  border-color: rgba(255, 255, 255, .055);
+}
+
+.startgg-importer { padding-top: 18px; }
+.startgg-form { gap: 11px; }
+.save-panel > p { color: var(--text-muted); }
+
+.players-heading { padding: 24px 24px 12px; }
+.players-heading-with-action { gap: 14px; }
+.auto-place-all-button,
+.auto-place-button {
+  min-height: 44px;
+  color: var(--accent-light);
+  background: var(--accent-soft);
+  border-color: transparent;
+}
+
+.editor-list {
+  display: grid;
+  gap: 8px;
+  padding: 0 14px 24px;
+  border-top: 0;
+}
+
+.player-editor {
+  overflow: hidden;
+  background: #111920;
+  border: 0;
+  border-radius: var(--radius-md);
+}
+
+.player-editor[open] {
+  background: var(--surface-raised);
+  box-shadow: none;
+}
+
+.player-editor summary {
+  min-height: 64px;
+  padding: 0 16px;
+  border-radius: inherit;
+}
+
+.editor-placement {
+  border: 0;
+  border-radius: 50%;
+  background: rgba(102, 207, 195, .1);
+}
+
+.editor-fields {
+  gap: 17px;
+  padding: 4px 16px 18px;
+  border-top-color: rgba(255, 255, 255, .055);
+}
+
+.control-group {
+  padding: 16px;
+  background: rgba(5, 10, 14, .32);
+  border-left: 0;
+  border-radius: var(--radius-md);
+}
+
+.control-group legend {
+  color: var(--text-muted);
+  letter-spacing: .035em;
+  text-transform: none;
+}
+
+.layer-select-button { border-color: transparent; background: rgba(255, 255, 255, .035); }
+.layer-select-button.is-active { border-color: rgba(102, 207, 195, .45); }
+
+.preview-panel {
+  justify-content: center;
+  padding: 36px clamp(28px, 5vw, 72px);
+  background: #0d1318;
+  background-image: none;
+}
+
+.preview-heading {
+  width: min(100%, 860px);
+  margin-bottom: 18px;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.preview-heading h2 { font-size: 1.08rem; }
+.canvas-size { color: var(--text-subtle); }
+
+.export-controls select,
+.export-controls button {
+  min-height: 42px;
+  border-color: transparent;
+}
+
+.export-controls select { background: var(--surface-raised); }
+.export-controls .export-psd-button { background: var(--surface-raised); border-color: transparent; }
+
+.canvas-frame {
+  width: min(100%, 734px);
+  padding: 11px;
+  background: #070a0d;
+  border: 0;
+  border-radius: 18px;
+  box-shadow: 0 24px 65px rgba(0, 0, 0, .34);
+}
+
+.canvas-frame .top8-canvas { border-radius: 9px; }
+.preview-note, .export-status { width: min(100%, 860px); }
+
+.auth-shell,
+.session-loading {
+  background: #0c1217;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 470px;
+  min-width: 0;
+  padding: 40px;
+  background: #111920;
+  border: 1px solid rgba(255, 255, 255, .075);
+  border-top-width: 1px;
+  border-radius: 26px;
+  box-shadow: 0 28px 75px rgba(0, 0, 0, .32);
+}
+
+.auth-brand,
+.session-loading-mark {
+  width: 50px;
+  height: 50px;
+  color: #0b1717;
+  background: var(--accent-light);
+  border-radius: 15px;
+  box-shadow: none;
+}
+
+.auth-card h1 { letter-spacing: -.045em; }
+.auth-intro { margin-bottom: 26px; }
+
+.auth-tabs {
+  gap: 5px;
+  padding: 5px;
+  background: #0b1217;
+  border: 0;
+  border-radius: 14px;
+}
+
+.auth-tabs button { border-radius: 10px; }
+.auth-tabs button[aria-selected="true"] { background: var(--surface-raised); box-shadow: none; }
+
+.auth-form { gap: 18px; }
+.auth-form input {
+  border-color: transparent;
+  border-radius: 11px;
+  background: #0c1319;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .065);
+}
+
+.auth-submit { border: 0; border-radius: 11px; }
+
+.project-dialog-backdrop,
+.startgg-dialog-backdrop { background: rgba(4, 8, 11, .76); }
+
+.project-dialog-backdrop-required {
+  background: #0c1217;
+  backdrop-filter: none;
+}
+
+.project-dialog,
+.startgg-dialog {
+  overflow: hidden;
+  background: #121a21;
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-top-width: 1px;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 32px 90px rgba(0, 0, 0, .38);
+}
+
+.project-dialog-backdrop-required .project-dialog:not(.project-dialog-wizard) {
+  width: min(500px, 100%);
+}
+
+.project-dialog header,
+.startgg-dialog-header { border-bottom-color: rgba(255, 255, 255, .055); }
+
+.project-design-options > button,
+.wizard-choice,
+.wizard-slider,
+.wizard-color-fields label,
+.wizard-summary > div {
+  background: var(--input);
+  border-color: transparent;
+  border-radius: var(--radius-md);
+}
+
+.project-design-options > button {
+  min-height: 88px;
+  padding: 14px;
+}
+
+.project-design-mark,
+.palette-editor-icon { border: 0; border-radius: 12px; }
+.project-design-mark-zero { border-radius: 12px; }
+.wizard-preview-panel { border-color: rgba(255, 255, 255, .07); border-radius: var(--radius-md); }
+.wizard-preview-frame { overflow: hidden; border: 0; border-radius: 10px; }
+.wizard-palette-preview { border: 0; border-radius: 999px; }
+
+.startgg-preview-list li { border-bottom-color: rgba(255, 255, 255, .055); }
+.startgg-dialog-actions { border-top-color: rgba(255, 255, 255, .055); }
+
+.palette-editor { border-radius: var(--radius-lg) 0 0 var(--radius-lg); }
+.palette-token,
+.palette-source-row label,
+.palette-source-row select { border-color: transparent; border-radius: var(--radius-sm); }
+
+@media (max-width: 960px) {
+  .app-shell { grid-template-columns: 1fr; }
+  .editor-panel { box-shadow: none; }
+  .preview-panel { padding: 26px 18px 30px; }
+}
+
+@media (max-width: 600px) {
+  .auth-shell { grid-template-columns: minmax(0, 1fr); overflow-x: hidden; }
+  .auth-card { padding: 28px 22px; border-radius: 20px; }
+  .auth-tabs button { min-width: 0; padding: 0 8px; white-space: normal; }
+  .app-header { padding-right: 20px; padding-left: 20px; }
+  .project-switcher,
+  .project-template-panel,
+  .save-panel,
+  .account-menu { margin-right: 10px; margin-left: 10px; }
+  .editor-list { padding-right: 10px; padding-left: 10px; }
+  .project-dialog { border-radius: 18px; }
+}

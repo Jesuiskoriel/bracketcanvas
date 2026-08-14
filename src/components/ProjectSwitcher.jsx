@@ -16,7 +16,7 @@ function DiceIcon() {
   )
 }
 
-function ProjectDialog({ mode, initialName, onCancel, onSubmit }) {
+function ProjectDialog({ mode, initialName, onCancel, onSubmit, required = false }) {
   const [name, setName] = useState(initialName)
   const [step, setStep] = useState('name')
   const [error, setError] = useState('')
@@ -30,12 +30,13 @@ function ProjectDialog({ mode, initialName, onCancel, onSubmit }) {
   }, [step])
 
   useEffect(() => {
+    if (required) return undefined
     const closeOnEscape = (event) => {
       if (event.key === 'Escape') onCancel()
     }
     window.addEventListener('keydown', closeOnEscape)
     return () => window.removeEventListener('keydown', closeOnEscape)
-  }, [onCancel])
+  }, [onCancel, required])
 
   const continueWithName = (event) => {
     event.preventDefault()
@@ -55,7 +56,11 @@ function ProjectDialog({ mode, initialName, onCancel, onSubmit }) {
   }
 
   return (
-    <div className="project-dialog-backdrop" role="presentation" onMouseDown={onCancel}>
+    <div
+      className={`project-dialog-backdrop${required ? ' project-dialog-backdrop-required' : ''}`}
+      role="presentation"
+      onMouseDown={required ? undefined : onCancel}
+    >
       <section
         className={`project-dialog${step === 'wizard' ? ' project-dialog-wizard' : ''}`}
         role="dialog"
@@ -66,10 +71,11 @@ function ProjectDialog({ mode, initialName, onCancel, onSubmit }) {
         {step === 'name' ? (
           <>
             <header>
-              <p className="eyebrow">{isCreateMode ? 'Étape 1 sur 2' : 'Workspace'}</p>
+              <p className="eyebrow">{required ? 'Bienvenue dans BracketCanvas' : isCreateMode ? 'Étape 1 sur 2' : 'Workspace'}</p>
               <h2 id="project-dialog-title">
-                {isCreateMode ? 'Nouveau projet' : 'Renommer le projet'}
+                {required ? 'Crée ton premier canvas' : isCreateMode ? 'Nouveau projet' : 'Renommer le projet'}
               </h2>
+              {required && <p className="project-dialog-intro">Commence par donner un nom à ton projet. Tu choisiras son design juste après.</p>}
             </header>
             <form onSubmit={continueWithName}>
               <label className="text-control project-name-control" htmlFor="project-name">
@@ -91,7 +97,7 @@ function ProjectDialog({ mode, initialName, onCancel, onSubmit }) {
               </label>
               {error && <p id="project-name-error" className="project-dialog-error" role="alert">{error}</p>}
               <div className="project-dialog-actions">
-                <button type="button" onClick={onCancel}>Annuler</button>
+                {!required && <button type="button" onClick={onCancel}>Annuler</button>}
                 <button type="submit">{isCreateMode ? 'Continuer' : 'Renommer'}</button>
               </div>
             </form>
@@ -117,7 +123,7 @@ function ProjectDialog({ mode, initialName, onCancel, onSubmit }) {
             </div>
             <div className="project-dialog-actions project-dialog-actions-design">
               <button type="button" onClick={() => setStep('name')}>Retour</button>
-              <button type="button" onClick={onCancel}>Annuler</button>
+              {!required && <button type="button" onClick={onCancel}>Annuler</button>}
             </div>
           </>
         ) : (
@@ -125,6 +131,7 @@ function ProjectDialog({ mode, initialName, onCancel, onSubmit }) {
             projectName={name.trim()}
             onBack={() => setStep('design')}
             onCancel={onCancel}
+            required={required}
             onSubmit={(brief, previewSeed) =>
               onSubmit(name.trim(), 'generate', brief, previewSeed)
             }
@@ -144,17 +151,24 @@ export default function ProjectSwitcher({
   onRename,
   onDuplicate,
   onDelete,
+  forceCreate = false,
 }) {
   const [dialogMode, setDialogMode] = useState('')
   const activeProject = projects.find(({ id }) => id === activeProjectId)
 
-  const closeDialog = () => setDialogMode('')
-  const submitDialog = (name, templateChoice, brief, previewSeed) => {
+  useEffect(() => {
+    if (forceCreate) setDialogMode('create')
+  }, [forceCreate])
+
+  const closeDialog = () => {
+    if (!forceCreate) setDialogMode('')
+  }
+  const submitDialog = async (name, templateChoice, brief, previewSeed) => {
     if (dialogMode === 'create') {
-      onCreate(name, templateChoice, brief, previewSeed)
+      await onCreate(name, templateChoice, brief, previewSeed)
     }
-    if (dialogMode === 'rename') onRename(name)
-    closeDialog()
+    if (dialogMode === 'rename') await onRename(name)
+    setDialogMode('')
   }
 
   return (
@@ -208,6 +222,7 @@ export default function ProjectSwitcher({
           initialName={dialogMode === 'rename' ? activeProject?.name || '' : ''}
           onCancel={closeDialog}
           onSubmit={submitDialog}
+          required={forceCreate && dialogMode === 'create'}
         />
       )}
     </>
