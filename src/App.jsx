@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import PlayerEditor from './components/PlayerEditor.jsx'
+import ProductNotice from './components/ProductNotice.jsx'
 import PaletteEditor from './components/PaletteEditor.jsx'
 import AccountMenu from './components/AccountMenu.jsx'
 import ProjectSwitcher from './components/ProjectSwitcher.jsx'
@@ -1007,7 +1008,10 @@ function App({ currentUser, onLogout }) {
         <header className="app-header">
           <div className="app-brand">
             <div>
-              <p className="eyebrow">BracketCanvas</p>
+              <div className="product-heading-row">
+                <p className="eyebrow">BracketCanvas</p>
+                <span className="beta-badge">Bêta</span>
+              </div>
               <h1 id="app-title">Éditeur Top 8</h1>
             </div>
           </div>
@@ -1121,6 +1125,8 @@ function App({ currentUser, onLogout }) {
             />
           ))}
         </div>
+
+        <ProductNotice />
       </aside>
 
       <section className="preview-panel" aria-labelledby="preview-title">
