@@ -39,7 +39,7 @@ docker compose build
 docker compose up -d
 ```
 
-L’application écoute par défaut sur le port `3000`. En production, place-la derrière un reverse proxy HTTPS afin que le cookie de session sécurisé fonctionne correctement. Les comptes et projets sont conservés dans le volume Docker `bracketcanvas_data`.
+Le conteneur applicatif reste privé sur le réseau Docker. Caddy expose les ports `80/443`, obtient automatiquement le certificat HTTPS et transmet les requêtes à BracketCanvas. Le domaine par défaut est `bracketcanvas.jesuiskoriel.dev` et peut être remplacé avec la variable `BRACKETCANVAS_DOMAIN`. Les comptes et projets sont conservés dans le volume Docker `bracketcanvas_data`.
 
 Pour créer une copie de sauvegarde cohérente de SQLite :
 

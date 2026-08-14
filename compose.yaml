@@ -10,11 +10,30 @@ services:
       NODE_ENV: production
       PORT: 3000
       DATABASE_PATH: /app/data/bracketcanvas.sqlite
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
-    ports:
-      - "${APP_PORT:-3000}:3000"
+      ALLOWED_ORIGINS: ${BRACKETCANVAS_ORIGIN:-https://bracketcanvas.jesuiskoriel.dev}
+    expose:
+      - "3000"
     volumes:
       - bracketcanvas_data:/app/data
 
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    depends_on:
+      bracketcanvas:
+        condition: service_healthy
+    environment:
+      BRACKETCANVAS_DOMAIN: ${BRACKETCANVAS_DOMAIN:-bracketcanvas.jesuiskoriel.dev}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
 volumes:
   bracketcanvas_data:
+  caddy_data:
+  caddy_config:
