@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import PlayerEditor from './components/PlayerEditor.jsx'
+import AdminPanel from './components/AdminPanel.jsx'
 import PaletteEditor from './components/PaletteEditor.jsx'
 import AccountMenu from './components/AccountMenu.jsx'
 import ProjectSwitcher from './components/ProjectSwitcher.jsx'
@@ -283,6 +284,7 @@ function App({ currentUser, onLogout }) {
   const [requiresProjectCreation, setRequiresProjectCreation] = useState(false)
   const [activeTemplate, setActiveTemplate] = useState(zeroTemplate)
   const [isPaletteEditorOpen, setIsPaletteEditorOpen] = useState(false)
+  const [isAdminOpen, setIsAdminOpen] = useState(false)
   const playersRef = useRef(players)
   playersRef.current = players
 
@@ -1018,6 +1020,7 @@ function App({ currentUser, onLogout }) {
           user={currentUser}
           disabled={isSaving || isRestoring}
           onLogout={logout}
+          onOpenAdmin={() => setIsAdminOpen(true)}
         />
 
         <ProjectSwitcher
@@ -1187,6 +1190,9 @@ function App({ currentUser, onLogout }) {
           onClose={closePaletteEditor}
           onChange={updateTemplatePalette}
         />
+      )}
+      {isAdminOpen && currentUser.role === 'admin' && (
+        <AdminPanel currentUserId={currentUser.id} onClose={() => setIsAdminOpen(false)} />
       )}
     </main>
   )

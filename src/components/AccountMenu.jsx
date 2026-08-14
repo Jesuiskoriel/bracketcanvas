@@ -1,4 +1,4 @@
-export default function AccountMenu({ user, disabled, onLogout }) {
+export default function AccountMenu({ user, disabled, onLogout, onOpenAdmin }) {
   const initial = (user.displayName || user.email || '?').trim().charAt(0).toUpperCase()
 
   return (
@@ -8,9 +8,12 @@ export default function AccountMenu({ user, disabled, onLogout }) {
         <strong>{user.displayName}</strong>
         <small>{user.email}</small>
       </span>
-      <button type="button" disabled={disabled} onClick={onLogout}>
-        Déconnexion
-      </button>
+      <span className="account-actions">
+        {user.role === 'admin' && (
+          <button type="button" disabled={disabled} onClick={onOpenAdmin}>Administration</button>
+        )}
+        <button type="button" disabled={disabled} onClick={onLogout}>Déconnexion</button>
+      </span>
     </section>
   )
 }

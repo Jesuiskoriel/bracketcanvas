@@ -11,6 +11,7 @@ services:
       PORT: 3000
       DATABASE_PATH: /app/data/bracketcanvas.sqlite
       ALLOWED_ORIGINS: ${BRACKETCANVAS_ORIGIN:-https://bracketcanvas.jesuiskoriel.dev}
+      ADMIN_EMAILS: ${BRACKETCANVAS_ADMIN_EMAILS:-}
     expose:
       - "3000"
     volumes:

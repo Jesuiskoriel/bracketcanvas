@@ -39,6 +39,33 @@ database.exec(`
     data TEXT NOT NULL,
     updated_at TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS admin_audit_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    admin_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    target_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    action TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  );
 `)
+
+const userColumns = new Set(
+  database.prepare('PRAGMA table_info(users)').all().map(({ name }) => name),
+)
+
+if (!userColumns.has('role')) {
+  database.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'")
+}
+if (!userColumns.has('disabled_at')) {
+  database.exec('ALTER TABLE users ADD COLUMN disabled_at TEXT')
+}
+
+const adminEmails = String(process.env.ADMIN_EMAILS || '')
+  .split(',')
+  .map((email) => email.trim().toLowerCase())
+  .filter(Boolean)
+
+const promoteAdmin = database.prepare("UPDATE users SET role = 'admin' WHERE email = ?")
+for (const email of adminEmails) promoteAdmin.run(email)
 
 export const closeDatabase = () => database.close()

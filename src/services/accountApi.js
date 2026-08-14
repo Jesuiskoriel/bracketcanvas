@@ -36,3 +36,13 @@ export const saveCloudProjectCollection = (collection) => request('/api/projects
   method: 'PUT',
   body: JSON.stringify({ collection }),
 })
+
+export const loadAdminUsers = () => request('/api/admin/users')
+
+export const setAdminUserDisabled = (userId, disabled) => request(
+  `/api/admin/users/${encodeURIComponent(userId)}/status`,
+  {
+    method: 'PATCH',
+    body: JSON.stringify({ disabled }),
+  },
+)

@@ -41,6 +41,7 @@ const publicUser = (user) => ({
   email: user.email,
   displayName: user.display_name,
   createdAt: user.created_at,
+  role: user.role || 'user',
 })
 
 export const validateRegistration = ({ email, password, displayName }) => {
@@ -80,7 +81,7 @@ export const verifyPassword = async (password, storedHash) => {
 }
 
 export const findUserByEmail = (email) => database.prepare(`
-  SELECT id, email, display_name, password_hash, created_at
+  SELECT id, email, display_name, password_hash, created_at, role, disabled_at
   FROM users
   WHERE email = ?
 `).get(normalizeEmail(email))
@@ -132,10 +133,12 @@ export const getAuthenticatedUser = (request) => {
   if (!token) return null
   const now = new Date().toISOString()
   const user = database.prepare(`
-    SELECT users.id, users.email, users.display_name, users.created_at
+    SELECT users.id, users.email, users.display_name, users.created_at, users.role
     FROM sessions
     JOIN users ON users.id = sessions.user_id
-    WHERE sessions.token_hash = ? AND sessions.expires_at > ?
+    WHERE sessions.token_hash = ?
+      AND sessions.expires_at > ?
+      AND users.disabled_at IS NULL
   `).get(hashToken(token), now)
   return user ? publicUser(user) : null
 }

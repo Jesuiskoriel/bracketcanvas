@@ -95,6 +95,16 @@ const requireUser = (request, response) => {
   return user
 }
 
+const requireAdmin = (request, response) => {
+  const user = requireUser(request, response)
+  if (!user) return null
+  if (user.role !== 'admin') {
+    sendJson(response, 403, { error: 'Accès administrateur requis.' })
+    return null
+  }
+  return user
+}
+
 const getLoginAttemptKey = (request, email) => {
   const address = request.socket.remoteAddress || 'unknown'
   return `${address}:${String(email || '').trim().toLowerCase()}`
@@ -165,7 +175,7 @@ const handleApi = async (request, response, pathname) => {
       String(input.password || '').slice(0, 256),
       userRecord?.password_hash || dummyPasswordHash,
     )
-    if (!userRecord || !passwordIsValid) {
+    if (!userRecord || userRecord.disabled_at || !passwordIsValid) {
       recordLoginFailure(attemptKey)
       sendJson(response, 401, { error: 'Email ou mot de passe incorrect.' })
       return
@@ -178,6 +188,7 @@ const handleApi = async (request, response, pathname) => {
         email: userRecord.email,
         displayName: userRecord.display_name,
         createdAt: userRecord.created_at,
+        role: userRecord.role || 'user',
       },
     }, { 'Set-Cookie': session.cookie })
     return
@@ -226,6 +237,81 @@ const handleApi = async (request, response, pathname) => {
         updated_at = excluded.updated_at
     `).run(user.id, Number(collection.version) || 1, serialized, updatedAt)
     sendJson(response, 200, { savedAt: updatedAt })
+    return
+  }
+
+  if (pathname === '/api/admin/users' && request.method === 'GET') {
+    const admin = requireAdmin(request, response)
+    if (!admin) return
+    const users = database.prepare(`
+      SELECT
+        users.id,
+        users.email,
+        users.display_name,
+        users.role,
+        users.created_at,
+        users.disabled_at,
+        workspaces.updated_at AS workspace_updated_at,
+        COALESCE((
+          SELECT COUNT(*) FROM json_each(json_extract(workspaces.data, '$.projects'))
+        ), 0) AS project_count,
+        MAX(sessions.created_at) AS last_session_at
+      FROM users
+      LEFT JOIN workspaces ON workspaces.user_id = users.id
+      LEFT JOIN sessions ON sessions.user_id = users.id
+      GROUP BY users.id
+      ORDER BY users.created_at DESC
+    `).all().map((user) => ({
+      id: user.id,
+      email: user.email,
+      displayName: user.display_name,
+      role: user.role,
+      createdAt: user.created_at,
+      disabledAt: user.disabled_at,
+      workspaceUpdatedAt: user.workspace_updated_at,
+      projectCount: Number(user.project_count) || 0,
+      lastSessionAt: user.last_session_at,
+    }))
+    sendJson(response, 200, { users })
+    return
+  }
+
+  const adminStatusMatch = pathname.match(/^\/api\/admin\/users\/([^/]+)\/status$/)
+  if (adminStatusMatch && request.method === 'PATCH') {
+    const admin = requireAdmin(request, response)
+    if (!admin) return
+    const targetId = decodeURIComponent(adminStatusMatch[1])
+    const target = database.prepare(`
+      SELECT id, role, disabled_at FROM users WHERE id = ?
+    `).get(targetId)
+    if (!target) {
+      sendJson(response, 404, { error: 'Utilisateur introuvable.' })
+      return
+    }
+    if (target.id === admin.id || target.role === 'admin') {
+      sendJson(response, 400, { error: 'Un compte administrateur ne peut pas être suspendu ici.' })
+      return
+    }
+    const { disabled } = await readJson(request)
+    if (typeof disabled !== 'boolean') {
+      sendJson(response, 400, { error: 'Le statut demandé est invalide.' })
+      return
+    }
+    const disabledAt = disabled ? new Date().toISOString() : null
+    database.exec('BEGIN IMMEDIATE')
+    try {
+      database.prepare('UPDATE users SET disabled_at = ? WHERE id = ?').run(disabledAt, target.id)
+      if (disabled) database.prepare('DELETE FROM sessions WHERE user_id = ?').run(target.id)
+      database.prepare(`
+        INSERT INTO admin_audit_log (admin_user_id, target_user_id, action, created_at)
+        VALUES (?, ?, ?, ?)
+      `).run(admin.id, target.id, disabled ? 'user_disabled' : 'user_enabled', new Date().toISOString())
+      database.exec('COMMIT')
+    } catch (error) {
+      database.exec('ROLLBACK')
+      throw error
+    }
+    sendJson(response, 200, { userId: target.id, disabledAt })
     return
   }
 
