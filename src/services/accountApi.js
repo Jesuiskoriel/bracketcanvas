@@ -11,6 +11,7 @@ const request = async (path, options = {}) => {
   if (!response.ok) {
     const error = new Error(payload.error || 'Le serveur est indisponible.')
     error.status = response.status
+    error.payload = payload
     throw error
   }
   return payload
@@ -30,12 +31,37 @@ export const loginAccount = (credentials) => request('/api/auth/login', {
 
 export const logoutAccount = () => request('/api/auth/logout', { method: 'POST' })
 
-export const loadCloudProjectCollection = () => request('/api/projects')
+const workspaceQuery = (workspaceId) => workspaceId
+  ? `?workspaceId=${encodeURIComponent(workspaceId)}`
+  : ''
 
-export const saveCloudProjectCollection = (collection) => request('/api/projects', {
+export const loadCloudProjectCollection = (workspaceId) =>
+  request(`/api/projects${workspaceQuery(workspaceId)}`)
+
+export const saveCloudProjectCollection = (collection, options = {}) => request('/api/projects', {
   method: 'PUT',
-  body: JSON.stringify({ collection }),
+  body: JSON.stringify({
+    collection,
+    workspaceId: options.workspaceId,
+    baseRevision: options.baseRevision,
+  }),
 })
+
+export const loadWorkspaces = () => request('/api/workspaces')
+
+export const loadWorkspaceMembers = (workspaceId) => request(
+  `/api/workspaces/${encodeURIComponent(workspaceId)}/members`,
+)
+
+export const inviteWorkspaceMember = (workspaceId, email) => request(
+  `/api/workspaces/${encodeURIComponent(workspaceId)}/members`,
+  { method: 'POST', body: JSON.stringify({ email }) },
+)
+
+export const removeWorkspaceMember = (workspaceId, userId) => request(
+  `/api/workspaces/${encodeURIComponent(workspaceId)}/members/${encodeURIComponent(userId)}`,
+  { method: 'DELETE' },
+)
 
 export const loadAdminUsers = () => request('/api/admin/users')
 

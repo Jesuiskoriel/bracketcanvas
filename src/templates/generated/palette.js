@@ -136,6 +136,11 @@ const moodAdjustments = {
   pastel: { background: 92, surface: 76, saturation: -28 },
   monochrome: { background: 8, surface: 24, saturation: -100 },
   contrast: { background: 5, surface: 22, saturation: 12 },
+  neon: { background: 5, surface: 16, saturation: 28 },
+  muted: { background: 14, surface: 31, saturation: -32 },
+  earth: { background: 13, surface: 30, saturation: -18 },
+  warm: { background: 10, surface: 27, saturation: 10 },
+  cool: { background: 8, surface: 24, saturation: 9 },
 }
 
 const hueOffsets = {
@@ -144,6 +149,10 @@ const hueOffsets = {
   triadic: [0, 120, 240],
   monochrome: [0, 0, 0],
   'high-contrast': [0, 180, 60],
+  duotone: [0, 180, 180],
+  'split-complementary': [0, 150, 210],
+  tetradic: [0, 90, 180],
+  earth: [0, 42, -32],
 }
 
 export const createPaletteFromColor = ({
@@ -154,7 +163,9 @@ export const createPaletteFromColor = ({
   const base = colorHsl(primary)
   const offsets = hueOffsets[harmony] || hueOffsets.analogous
   const adjustment = moodAdjustments[mood] || moodAdjustments.dark
-  const saturation = clamp(base.s + adjustment.saturation, 18, 96)
+  const saturation = mood === 'monochrome'
+    ? 0
+    : clamp(base.s + adjustment.saturation, 18, 96)
   const backgroundLightness = adjustment.background
   const surfaceLightness = adjustment.surface
   const isLight = backgroundLightness > 55
@@ -168,6 +179,15 @@ export const createPaletteFromColor = ({
     textMuted: isLight ? '#4D5568' : '#B8C3D6',
     outline: isLight ? '#11131A' : '#02040A',
     winner: hslToHex({ h: base.h + (harmony === 'monochrome' ? 0 : 52), s: clamp(saturation + 4, 28, 100), l: isLight ? 42 : 64 }),
+  }
+  if (harmony === 'high-contrast') {
+    palette.background = isLight ? '#F7F4ED' : '#07080B'
+    palette.surface = isLight ? '#111318' : '#F4F1E8'
+    palette.secondary = isLight ? '#111318' : '#FFFFFF'
+    palette.accent = hslToHex({ h: base.h, s: clamp(base.s + 18, 54, 100), l: isLight ? 42 : 60 })
+    palette.text = isLight ? '#090A0D' : '#FFFFFF'
+    palette.textMuted = isLight ? '#4D4F58' : '#C7C8CC'
+    palette.outline = isLight ? '#0A0B0E' : '#010204'
   }
   if (contrastRatio(palette.text, palette.background) < 4.5) {
     palette.text = isLight ? '#090A0D' : '#FFFFFF'

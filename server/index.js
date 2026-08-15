@@ -105,6 +105,27 @@ const requireAdmin = (request, response) => {
   return user
 }
 
+const getWorkspaceAccess = (userId, workspaceId) => {
+  if (userId === workspaceId) return { role: 'owner' }
+  return database.prepare(`
+    SELECT role FROM workspace_members
+    WHERE workspace_owner_id = ? AND member_user_id = ?
+  `).get(workspaceId, userId) || null
+}
+
+const serializeWorkspace = (owner, role, workspace, memberCount = 0) => ({
+  id: owner.id,
+  role,
+  owner: {
+    id: owner.id,
+    displayName: owner.display_name,
+    email: owner.email,
+  },
+  revision: Number(workspace?.revision) || 0,
+  updatedAt: workspace?.updated_at || null,
+  memberCount: Number(memberCount) || 0,
+})
+
 const getLoginAttemptKey = (request, email) => {
   const address = request.socket.remoteAddress || 'unknown'
   return `${address}:${String(email || '').trim().toLowerCase()}`
@@ -199,22 +220,164 @@ const handleApi = async (request, response, pathname) => {
     return
   }
 
+  if (pathname === '/api/workspaces' && request.method === 'GET') {
+    const user = requireUser(request, response)
+    if (!user) return
+    const rows = database.prepare(`
+      SELECT
+        owners.id,
+        owners.email,
+        owners.display_name,
+        workspaces.revision,
+        workspaces.updated_at,
+        CASE WHEN owners.id = ? THEN 'owner' ELSE workspace_members.role END AS access_role,
+        (SELECT COUNT(*) FROM workspace_members members
+          WHERE members.workspace_owner_id = owners.id) AS member_count
+      FROM users owners
+      LEFT JOIN workspaces ON workspaces.user_id = owners.id
+      LEFT JOIN workspace_members
+        ON workspace_members.workspace_owner_id = owners.id
+        AND workspace_members.member_user_id = ?
+      WHERE owners.id = ? OR workspace_members.member_user_id = ?
+      ORDER BY CASE WHEN owners.id = ? THEN 0 ELSE 1 END, owners.display_name COLLATE NOCASE
+    `).all(user.id, user.id, user.id, user.id, user.id)
+    sendJson(response, 200, {
+      workspaces: rows.map((row) => serializeWorkspace(
+        row,
+        row.access_role,
+        row,
+        row.member_count,
+      )),
+    })
+    return
+  }
+
+  const workspaceMembersMatch = pathname.match(/^\/api\/workspaces\/([^/]+)\/members$/)
+  if (workspaceMembersMatch && request.method === 'GET') {
+    const user = requireUser(request, response)
+    if (!user) return
+    const workspaceId = decodeURIComponent(workspaceMembersMatch[1])
+    if (!getWorkspaceAccess(user.id, workspaceId)) {
+      sendJson(response, 403, { error: 'Tu n’as pas accès à ce workspace.' })
+      return
+    }
+    const members = database.prepare(`
+      SELECT users.id, users.email, users.display_name, workspace_members.role,
+        workspace_members.created_at
+      FROM workspace_members
+      JOIN users ON users.id = workspace_members.member_user_id
+      WHERE workspace_members.workspace_owner_id = ?
+      ORDER BY workspace_members.created_at
+    `).all(workspaceId).map((member) => ({
+      id: member.id,
+      email: member.email,
+      displayName: member.display_name,
+      role: member.role,
+      createdAt: member.created_at,
+    }))
+    sendJson(response, 200, { members })
+    return
+  }
+
+  if (workspaceMembersMatch && request.method === 'POST') {
+    const user = requireUser(request, response)
+    if (!user) return
+    const workspaceId = decodeURIComponent(workspaceMembersMatch[1])
+    if (workspaceId !== user.id) {
+      sendJson(response, 403, { error: 'Seul le propriétaire peut inviter un collaborateur.' })
+      return
+    }
+    const { email } = await readJson(request)
+    const member = findUserByEmail(String(email || '').trim().toLowerCase())
+    if (!member || member.disabled_at) {
+      sendJson(response, 404, { error: 'Aucun compte actif ne correspond à cet e-mail.' })
+      return
+    }
+    if (member.id === user.id) {
+      sendJson(response, 400, { error: 'Tu es déjà propriétaire de ce workspace.' })
+      return
+    }
+    database.prepare(`
+      INSERT INTO workspace_members
+        (workspace_owner_id, member_user_id, role, invited_by, created_at)
+      VALUES (?, ?, 'editor', ?, ?)
+      ON CONFLICT(workspace_owner_id, member_user_id) DO NOTHING
+    `).run(workspaceId, member.id, user.id, new Date().toISOString())
+    sendJson(response, 201, {
+      member: {
+        id: member.id,
+        email: member.email,
+        displayName: member.display_name,
+        role: 'editor',
+      },
+    })
+    return
+  }
+
+  const workspaceMemberMatch = pathname.match(
+    /^\/api\/workspaces\/([^/]+)\/members\/([^/]+)$/,
+  )
+  if (workspaceMemberMatch && request.method === 'DELETE') {
+    const user = requireUser(request, response)
+    if (!user) return
+    const workspaceId = decodeURIComponent(workspaceMemberMatch[1])
+    const memberId = decodeURIComponent(workspaceMemberMatch[2])
+    if (workspaceId !== user.id && memberId !== user.id) {
+      sendJson(response, 403, { error: 'Tu ne peux pas modifier cet accès.' })
+      return
+    }
+    database.prepare(`
+      DELETE FROM workspace_members
+      WHERE workspace_owner_id = ? AND member_user_id = ?
+    `).run(workspaceId, memberId)
+    sendJson(response, 200, { ok: true })
+    return
+  }
+
   if (pathname === '/api/projects' && request.method === 'GET') {
     const user = requireUser(request, response)
     if (!user) return
+    const workspaceId = new URL(
+      request.url,
+      `http://${request.headers.host || 'localhost'}`,
+    ).searchParams.get('workspaceId') || user.id
+    const access = getWorkspaceAccess(user.id, workspaceId)
+    if (!access) {
+      sendJson(response, 403, { error: 'Tu n’as pas accès à ce workspace.' })
+      return
+    }
     const workspace = database.prepare(`
-      SELECT data, updated_at FROM workspaces WHERE user_id = ?
-    `).get(user.id)
+      SELECT data, updated_at, revision FROM workspaces WHERE user_id = ?
+    `).get(workspaceId)
+    const owner = database.prepare(`
+      SELECT id, email, display_name FROM users WHERE id = ?
+    `).get(workspaceId)
     sendJson(response, 200, workspace
-      ? { collection: JSON.parse(workspace.data), updatedAt: workspace.updated_at }
-      : { collection: null, updatedAt: null })
+      ? {
+          collection: JSON.parse(workspace.data),
+          updatedAt: workspace.updated_at,
+          revision: Number(workspace.revision) || 1,
+          workspace: serializeWorkspace(owner, access.role, workspace),
+        }
+      : {
+          collection: null,
+          updatedAt: null,
+          revision: 0,
+          workspace: serializeWorkspace(owner, access.role, null),
+        })
     return
   }
 
   if (pathname === '/api/projects' && request.method === 'PUT') {
     const user = requireUser(request, response)
     if (!user) return
-    const { collection } = await readJson(request)
+    const { collection, workspaceId: requestedWorkspaceId, baseRevision } = await readJson(request)
+    const workspaceId = requestedWorkspaceId || user.id
+    const access = getWorkspaceAccess(user.id, workspaceId)
+    if (!access || !['owner', 'editor'].includes(access.role)) {
+      sendJson(response, 403, { error: 'Tu ne peux pas modifier ce workspace.' })
+      return
+    }
     if (
       !collection ||
       typeof collection !== 'object' ||
@@ -228,15 +391,42 @@ const handleApi = async (request, response, pathname) => {
     }
     const serialized = JSON.stringify(collection)
     const updatedAt = new Date().toISOString()
-    database.prepare(`
-      INSERT INTO workspaces (user_id, version, data, updated_at)
-      VALUES (?, ?, ?, ?)
-      ON CONFLICT(user_id) DO UPDATE SET
-        version = excluded.version,
-        data = excluded.data,
-        updated_at = excluded.updated_at
-    `).run(user.id, Number(collection.version) || 1, serialized, updatedAt)
-    sendJson(response, 200, { savedAt: updatedAt })
+    database.exec('BEGIN IMMEDIATE')
+    try {
+      const current = database.prepare(`
+        SELECT revision FROM workspaces WHERE user_id = ?
+      `).get(workspaceId)
+      const currentRevision = Number(current?.revision) || 0
+      if (Number.isInteger(baseRevision) && baseRevision !== currentRevision) {
+        database.exec('ROLLBACK')
+        sendJson(response, 409, {
+          error: 'Le workspace a été modifié par un autre collaborateur.',
+          currentRevision,
+        })
+        return
+      }
+      const nextRevision = currentRevision + 1
+      database.prepare(`
+        INSERT INTO workspaces (user_id, version, data, updated_at, revision)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(user_id) DO UPDATE SET
+          version = excluded.version,
+          data = excluded.data,
+          updated_at = excluded.updated_at,
+          revision = excluded.revision
+      `).run(
+        workspaceId,
+        Number(collection.version) || 1,
+        serialized,
+        updatedAt,
+        nextRevision,
+      )
+      database.exec('COMMIT')
+      sendJson(response, 200, { savedAt: updatedAt, revision: nextRevision })
+    } catch (error) {
+      database.exec('ROLLBACK')
+      throw error
+    }
     return
   }
 

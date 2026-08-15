@@ -1,6 +1,7 @@
 .git
 .gitignore
 .gitattributes
+.env
 node_modules
 dist
 data

@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "dev:api": "PORT=3001 NODE_ENV=development node --watch server/index.js",
+    "audit:templates": "node scripts/audit-generator.mjs",
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",

@@ -194,7 +194,7 @@ function PlacementNumber({
           left: `${((safeRank.rankX - slot.x) / slot.width) * 100}%`,
           top: `${((safeRank.rankY - slot.y) / slot.height) * 100}%`,
           color: player.rankColor,
-          fontSize: `clamp(8px, ${(safeRank.rankSize / template.width) * 100}vw, ${safeRank.rankSize}px)`,
+          fontSize: `${(safeRank.rankSize / template.width) * 100}cqi`,
           ...template.rankStyle,
         }}
       >

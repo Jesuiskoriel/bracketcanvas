@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import App from './App.jsx'
 import AuthScreen from './components/AuthScreen.jsx'
 import BetaWelcomeModal from './components/BetaWelcomeModal.jsx'
@@ -10,7 +10,15 @@ import {
   registerAccount,
 } from './services/accountApi.js'
 
-export default function Root() {
+const showTemplateContactSheet =
+  import.meta.env.DEV &&
+  new URLSearchParams(window.location.search).get('templateContactSheet') === '1'
+
+const TemplateDiversityBoard = import.meta.env.DEV
+  ? lazy(() => import('./components/TemplateDiversityBoard.jsx'))
+  : null
+
+function BracketCanvasRoot() {
   const [theme, setTheme] = useState(() => {
     try {
       return localStorage.getItem('bracketcanvas:theme') === 'light' ? 'light' : 'dark'
@@ -106,4 +114,15 @@ export default function Root() {
       {showBetaWelcome && <BetaWelcomeModal onClose={closeBetaWelcome} />}
     </>
   )
+}
+
+export default function Root() {
+  if (showTemplateContactSheet && TemplateDiversityBoard) {
+    return (
+      <Suspense fallback={<main className="session-loading"><p>Préparation de la planche…</p></main>}>
+        <TemplateDiversityBoard />
+      </Suspense>
+    )
+  }
+  return <BracketCanvasRoot />
 }

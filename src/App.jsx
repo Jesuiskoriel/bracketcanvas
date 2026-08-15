@@ -4,6 +4,8 @@ import AdminPanel from './components/AdminPanel.jsx'
 import PaletteEditor from './components/PaletteEditor.jsx'
 import AccountMenu from './components/AccountMenu.jsx'
 import ProjectSwitcher from './components/ProjectSwitcher.jsx'
+import CollaborationPanel from './components/CollaborationPanel.jsx'
+import KeyboardShortcuts from './components/KeyboardShortcuts.jsx'
 import ProjectTemplatePanel from './components/ProjectTemplatePanel.jsx'
 import StartggImporter from './components/StartggImporter.jsx'
 import TemplateEditor from './components/TemplateEditor.jsx'
@@ -34,6 +36,7 @@ import { fileToDataUrl } from './utils/imageData.js'
 import { constrainRankPosition } from './utils/rankPosition.js'
 import {
   loadCloudProjectCollection,
+  loadWorkspaces,
   saveCloudProjectCollection,
 } from './services/accountApi.js'
 import './App.css'
@@ -269,6 +272,8 @@ function App({ currentUser, onLogout }) {
   const projectCollectionRef = useRef(null)
   const cloudSaveQueueRef = useRef(Promise.resolve())
   const cloudSaveGenerationRef = useRef(0)
+  const cloudRevisionRef = useRef(0)
+  const skipNextAutoSaveRef = useRef(false)
   const [players, setPlayers] = useState(initialPlayers)
   const [selectedLayer, setSelectedLayer] = useState(INITIAL_SELECTED_LAYER)
   const [exportScale, setExportScale] = useState(4)
@@ -285,6 +290,10 @@ function App({ currentUser, onLogout }) {
   const [activeTemplate, setActiveTemplate] = useState(zeroTemplate)
   const [isPaletteEditorOpen, setIsPaletteEditorOpen] = useState(false)
   const [isAdminOpen, setIsAdminOpen] = useState(false)
+  const [activeWorkspaceId, setActiveWorkspaceId] = useState(currentUser.id)
+  const [workspaces, setWorkspaces] = useState([])
+  const [hasCloudConflict, setHasCloudConflict] = useState(false)
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false)
   const playersRef = useRef(players)
   playersRef.current = players
 
@@ -301,6 +310,17 @@ function App({ currentUser, onLogout }) {
     setProjectCollection(collection)
   }, [])
 
+  const refreshWorkspaces = useCallback(async () => {
+    try {
+      const result = await loadWorkspaces()
+      setWorkspaces(result.workspaces)
+      return result.workspaces
+    } catch (error) {
+      console.error(error)
+      return []
+    }
+  }, [])
+
   const syncCollectionToCloud = useCallback((collection) => {
     const generation = cloudSaveGenerationRef.current + 1
     cloudSaveGenerationRef.current = generation
@@ -308,28 +328,40 @@ function App({ currentUser, onLogout }) {
 
     cloudSaveQueueRef.current = cloudSaveQueueRef.current
       .catch(() => undefined)
-      .then(() => saveCloudProjectCollection(collection))
-      .then(() => {
+      .then(() => saveCloudProjectCollection(collection, {
+        workspaceId: activeWorkspaceId,
+        baseRevision: cloudRevisionRef.current,
+      }))
+      .then((result) => {
+        cloudRevisionRef.current = result.revision
+        setHasCloudConflict(false)
         if (cloudSaveGenerationRef.current === generation) {
           setSaveStatus('Sauvegardé sur le cloud')
         }
       })
       .catch((error) => {
         console.error(error)
+        if (error.status === 409) setHasCloudConflict(true)
         if (cloudSaveGenerationRef.current === generation) {
-          setSaveStatus('Cloud indisponible — modifications conservées sur cet appareil')
+          setSaveStatus(error.status === 409
+            ? 'Conflit détecté — charge la version distante avant de continuer'
+            : 'Cloud indisponible — modifications conservées sur cet appareil')
         }
       })
 
     return cloudSaveQueueRef.current
-  }, [])
+  }, [activeWorkspaceId])
 
   const storeCollection = useCallback((collection, syncCloud = true) => {
-    const normalizedCollection = saveProjectCollection(collection, currentUser.id)
+    const normalizedCollection = saveProjectCollection(collection, activeWorkspaceId)
     setCollection(normalizedCollection)
     if (syncCloud) syncCollectionToCloud(normalizedCollection)
     return normalizedCollection
-  }, [currentUser.id, setCollection, syncCollectionToCloud])
+  }, [activeWorkspaceId, setCollection, syncCollectionToCloud])
+
+  useEffect(() => {
+    refreshWorkspaces()
+  }, [refreshWorkspaces])
 
   useEffect(() => {
     let isActive = true
@@ -341,14 +373,15 @@ function App({ currentUser, onLogout }) {
         let isNewWorkspace = false
 
         try {
-          const cloudWorkspace = await loadCloudProjectCollection()
+          const cloudWorkspace = await loadCloudProjectCollection(activeWorkspaceId)
           collection = cloudWorkspace.collection
+          cloudRevisionRef.current = cloudWorkspace.revision || 0
         } catch (error) {
           console.error(error)
           cloudIsAvailable = false
         }
 
-        if (!collection) collection = loadProjectCollection(currentUser.id)
+        if (!collection) collection = loadProjectCollection(activeWorkspaceId)
         if (!collection) {
           isNewWorkspace = true
           collection = createProjectCollection(
@@ -363,9 +396,6 @@ function App({ currentUser, onLogout }) {
           )
         }
         collection = storeCollection(collection, false)
-        if (cloudIsAvailable && !isNewWorkspace) {
-          await syncCollectionToCloud(collection)
-        }
         const activeProject = collection.projects[collection.activeProjectId]
         const restoredState = await restoreProjectState(activeProject?.data)
         if (!isActive) return
@@ -391,7 +421,7 @@ function App({ currentUser, onLogout }) {
     return () => {
       isActive = false
     }
-  }, [applyRestoredState, currentUser.id, storeCollection, syncCollectionToCloud])
+  }, [activeWorkspaceId, applyRestoredState, storeCollection])
 
   const persistCurrentProject = useCallback(() => {
     if (!projectCollectionRef.current) return null
@@ -423,6 +453,48 @@ function App({ currentUser, onLogout }) {
     }
   }, [activeTemplate, eventDetails, exportScale, players, selectedLayer, storeCollection])
 
+  const reloadWorkspaceFromCloud = useCallback(async () => {
+    if (saveTimeoutRef.current) {
+      window.clearTimeout(saveTimeoutRef.current)
+      saveTimeoutRef.current = null
+    }
+    setIsRestoring(true)
+    setSaveStatus('Synchronisation du workspace…')
+    try {
+      const remote = await loadCloudProjectCollection(activeWorkspaceId)
+      if (!remote.collection) return
+      cloudRevisionRef.current = remote.revision || 0
+      const currentProjectId = projectCollectionRef.current?.activeProjectId
+      const synchronizedCollection = remote.collection.projects?.[currentProjectId]
+        ? { ...remote.collection, activeProjectId: currentProjectId }
+        : remote.collection
+      const normalized = saveProjectCollection(synchronizedCollection, activeWorkspaceId)
+      setCollection(normalized)
+      const activeProject = normalized.projects[normalized.activeProjectId]
+      skipNextAutoSaveRef.current = true
+      applyRestoredState(await restoreProjectState(activeProject?.data))
+      setHasCloudConflict(false)
+      setSaveStatus('Synchronisé avec les collaborateurs')
+    } catch (error) {
+      console.error(error)
+      setSaveStatus('Impossible de charger la version distante.')
+    } finally {
+      setIsRestoring(false)
+    }
+  }, [activeWorkspaceId, applyRestoredState, setCollection])
+
+  const selectWorkspace = useCallback(async (workspaceId) => {
+    if (!workspaceId || workspaceId === activeWorkspaceId || isRestoring) return
+    if (!requiresProjectCreation) persistCurrentProject()
+    setIsRestoring(true)
+    setSaveStatus('Changement de workspace…')
+    await cloudSaveQueueRef.current.catch(() => undefined)
+    cloudRevisionRef.current = 0
+    cloudSaveGenerationRef.current += 1
+    setHasCloudConflict(false)
+    setActiveWorkspaceId(workspaceId)
+  }, [activeWorkspaceId, isRestoring, persistCurrentProject, requiresProjectCreation])
+
   useEffect(() => {
     if (
       isRestoring ||
@@ -430,6 +502,10 @@ function App({ currentUser, onLogout }) {
       !projectCollectionRef.current
     ) return undefined
 
+    if (skipNextAutoSaveRef.current) {
+      skipNextAutoSaveRef.current = false
+      return undefined
+    }
     setSaveStatus('Sauvegarde…')
     saveTimeoutRef.current = window.setTimeout(persistCurrentProject, 600)
     return () => {
@@ -437,6 +513,19 @@ function App({ currentUser, onLogout }) {
       saveTimeoutRef.current = null
     }
   }, [isRestoring, persistCurrentProject, requiresProjectCreation])
+
+  useEffect(() => {
+    if (isRestoring || requiresProjectCreation) return undefined
+    const interval = window.setInterval(async () => {
+      if (saveTimeoutRef.current || hasCloudConflict) return
+      const available = await refreshWorkspaces()
+      const remoteWorkspace = available.find(({ id }) => id === activeWorkspaceId)
+      if ((remoteWorkspace?.revision || 0) > cloudRevisionRef.current) {
+        await reloadWorkspaceFromCloud()
+      }
+    }, 5000)
+    return () => window.clearInterval(interval)
+  }, [activeWorkspaceId, hasCloudConflict, isRestoring, refreshWorkspaces, reloadWorkspaceFromCloud, requiresProjectCreation])
 
   const updatePlayer = useCallback((id, changes) => {
     setPlayers((currentPlayers) =>
@@ -451,6 +540,78 @@ function App({ currentUser, onLogout }) {
       }),
     )
   }, [activeTemplate])
+
+  useEffect(() => {
+    const handleShortcut = (event) => {
+      const target = event.target
+      const isTyping = target instanceof HTMLElement && (
+        target.isContentEditable ||
+        ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)
+      )
+
+      if (event.key === 'Escape' && isShortcutsOpen) {
+        setIsShortcutsOpen(false)
+        return
+      }
+      if (isTyping) return
+      if (event.key === '?') {
+        event.preventDefault()
+        setIsShortcutsOpen(true)
+        return
+      }
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
+        event.preventDefault()
+        persistCurrentProject()
+        return
+      }
+      if (isShortcutsOpen || event.metaKey || event.ctrlKey || event.altKey) return
+
+      const player = players.find(({ id }) => id === selectedLayer.playerId)
+      if (!player) return
+      const secondary = selectedLayer.layer === 'secondary'
+      const hasRender = secondary ? player.secondaryRender : player.render
+
+      if (event.key === '1' && player.render) {
+        event.preventDefault()
+        setSelectedLayer({ playerId: player.id, layer: 'primary' })
+        return
+      }
+      if (event.key === '2' && player.secondaryRender) {
+        event.preventDefault()
+        setSelectedLayer({ playerId: player.id, layer: 'secondary' })
+        return
+      }
+      if (!hasRender) return
+
+      const keys = secondary
+        ? { x: 'secondaryX', y: 'secondaryY', scale: 'secondaryScale', flipped: 'secondaryFlipped', opacity: 'secondaryOpacity' }
+        : { x: 'x', y: 'y', scale: 'scale', flipped: 'flipped', opacity: 'opacity' }
+      const movement = event.shiftKey ? 5 : 1
+      const changes = {}
+
+      if (event.key === 'ArrowLeft') changes[keys.x] = player[keys.x] - movement
+      else if (event.key === 'ArrowRight') changes[keys.x] = player[keys.x] + movement
+      else if (event.key === 'ArrowUp') changes[keys.y] = player[keys.y] - movement
+      else if (event.key === 'ArrowDown') changes[keys.y] = player[keys.y] + movement
+      else if (['+', '='].includes(event.key)) {
+        changes[keys.scale] = Math.min(2.5, Math.round((player[keys.scale] + 0.05) * 100) / 100)
+      } else if (event.key === '-') {
+        changes[keys.scale] = Math.max(0.25, Math.round((player[keys.scale] - 0.05) * 100) / 100)
+      } else if (event.key.toLowerCase() === 'f') {
+        changes[keys.flipped] = !player[keys.flipped]
+      } else if (event.key === '[') {
+        changes[keys.opacity] = Math.max(0, player[keys.opacity] - 5)
+      } else if (event.key === ']') {
+        changes[keys.opacity] = Math.min(100, player[keys.opacity] + 5)
+      } else return
+
+      event.preventDefault()
+      updatePlayer(player.id, changes)
+    }
+
+    window.addEventListener('keydown', handleShortcut)
+    return () => window.removeEventListener('keydown', handleShortcut)
+  }, [isShortcutsOpen, persistCurrentProject, players, selectedLayer, updatePlayer])
 
   const updateEventDetails = (changes) => {
     setEventDetails((current) => ({ ...current, ...changes }))
@@ -1023,6 +1184,17 @@ function App({ currentUser, onLogout }) {
           onOpenAdmin={() => setIsAdminOpen(true)}
         />
 
+        <CollaborationPanel
+          currentUser={currentUser}
+          workspaces={workspaces}
+          activeWorkspaceId={activeWorkspaceId}
+          disabled={isSaving || isRestoring}
+          hasConflict={hasCloudConflict}
+          onSelectWorkspace={selectWorkspace}
+          onReloadRemote={reloadWorkspaceFromCloud}
+          onRefreshWorkspaces={refreshWorkspaces}
+        />
+
         <ProjectSwitcher
           projects={Object.values(projectCollection?.projects || {})}
           activeProjectId={projectCollection?.activeProjectId || ''}
@@ -1135,6 +1307,11 @@ function App({ currentUser, onLogout }) {
           </div>
           <div className="preview-actions">
             <span className="canvas-size">686 × 386 px</span>
+            <KeyboardShortcuts
+              isOpen={isShortcutsOpen}
+              onOpen={() => setIsShortcutsOpen(true)}
+              onClose={() => setIsShortcutsOpen(false)}
+            />
             <div className="export-controls">
               <label htmlFor="export-scale">
                 <span>Qualité</span>

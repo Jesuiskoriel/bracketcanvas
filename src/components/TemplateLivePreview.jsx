@@ -20,8 +20,14 @@ const formatPreviewDate = (date) => {
   }).format(parsedDate)
 }
 
-export default function TemplateLivePreview({ template, brief, onShuffle }) {
-  const players = useMemo(() => template.slots.map((slot, index) => ({
+export default function TemplateLivePreview({
+  template,
+  brief,
+  onShuffle,
+  error = '',
+  isBusy = false,
+}) {
+  const players = useMemo(() => (template?.slots || []).map((slot, index) => ({
     id: slot.id,
     placement: slot.placement,
     playerName: `PLAYER ${index + 1}`,
@@ -51,26 +57,47 @@ export default function TemplateLivePreview({ template, brief, onShuffle }) {
       <div className="wizard-preview-heading">
         <div>
           <p className="eyebrow">Preview live</p>
-          <h3 id="wizard-preview-title">{template.name}</h3>
-          <small>{template.familyName} · {template.layoutName}</small>
+          <h3 id="wizard-preview-title">{template?.name || 'Aperçu indisponible'}</h3>
+          {template && <small>{template.familyName} · {template.layoutName}</small>}
         </div>
-        <button type="button" onClick={onShuffle}>
+        <button
+          type="button"
+          className={isBusy ? 'is-busy' : ''}
+          disabled={isBusy}
+          aria-busy={isBusy}
+          onClick={onShuffle}
+        >
           <ShuffleIcon />
-          Autre proposition
+          {isBusy ? 'Recherche…' : 'Autre proposition'}
         </button>
       </div>
       <div className="wizard-preview-frame">
-        <div className="wizard-preview-canvas" aria-live="polite">
-          <Top8Canvas
-            template={template}
-            players={players}
-            eventDetails={eventDetails}
-            selectedLayer={{}}
-            onPlayerChange={() => {}}
-            onSelectLayer={() => {}}
-          />
-        </div>
+        {template ? (
+          <div className="wizard-preview-canvas">
+            <Top8Canvas
+              template={template}
+              players={players}
+              eventDetails={eventDetails}
+              selectedLayer={{}}
+              onPlayerChange={() => {}}
+              onSelectLayer={() => {}}
+            />
+          </div>
+        ) : (
+          <div className="wizard-preview-error" role="alert">
+            <strong>La preview n'a pas pu être générée.</strong>
+            <span>{error || 'Essaie une autre proposition.'}</span>
+          </div>
+        )}
       </div>
+      {error && template && <p className="wizard-preview-inline-error" role="alert">{error}</p>}
+      <p className="visually-hidden" role="status" aria-live="polite" aria-atomic="true">
+        {isBusy
+          ? 'Recherche d’une nouvelle proposition.'
+          : template
+            ? `Proposition ${template.name}, direction ${template.familyName}, composition ${template.layoutName}.`
+            : 'Aucune proposition disponible.'}
+      </p>
       <p className="wizard-preview-note">Aperçu 686 × 386 · Aucun render SSBU n’est chargé.</p>
     </aside>
   )

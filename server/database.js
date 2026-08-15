@@ -40,6 +40,19 @@ database.exec(`
     updated_at TEXT NOT NULL
   );
 
+  CREATE TABLE IF NOT EXISTS workspace_members (
+    workspace_owner_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    member_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role TEXT NOT NULL DEFAULT 'editor',
+    invited_by TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (workspace_owner_id, member_user_id),
+    CHECK (workspace_owner_id <> member_user_id)
+  );
+
+  CREATE INDEX IF NOT EXISTS workspace_members_member_idx
+    ON workspace_members(member_user_id);
+
   CREATE TABLE IF NOT EXISTS admin_audit_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     admin_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -48,6 +61,14 @@ database.exec(`
     created_at TEXT NOT NULL
   );
 `)
+
+const workspaceColumns = new Set(
+  database.prepare('PRAGMA table_info(workspaces)').all().map(({ name }) => name),
+)
+
+if (!workspaceColumns.has('revision')) {
+  database.exec('ALTER TABLE workspaces ADD COLUMN revision INTEGER NOT NULL DEFAULT 1')
+}
 
 const userColumns = new Set(
   database.prepare('PRAGMA table_info(users)').all().map(({ name }) => name),

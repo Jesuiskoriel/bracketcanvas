@@ -83,7 +83,7 @@ const Top8Canvas = forwardRef(function Top8Canvas(
             width: `${(field.width / template.width) * 100}%`,
             height: `${(field.height / template.height) * 100}%`,
             zIndex: field.zIndex,
-            fontSize: `clamp(6px, ${(field.fontSize / template.width) * 100}vw, ${field.fontSize}px)`,
+            fontSize: `${(field.fontSize / template.width) * 100}cqi`,
             lineHeight: field.lineHeight,
             textAlign: field.align,
             color: field.color,

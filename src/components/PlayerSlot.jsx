@@ -168,6 +168,11 @@ function PlayerSlot({
     onPointerMove: moveRender,
     onPointerUp: finishDrag,
     onPointerCancel: finishDrag,
+    onDoubleClick: (event) => {
+      event.preventDefault()
+      event.stopPropagation()
+      onSelectLayer(layer)
+    },
   })
 
   const slotStyle = {
@@ -186,7 +191,7 @@ function PlayerSlot({
     height: `${(slot.nameZone.height / slot.height) * 100}%`,
     justifyContent: slot.nameZone.align,
     textAlign: slot.nameZone.align,
-    fontSize: `clamp(5px, ${(slot.nameZone.fontSize / template.width) * 100}vw, ${slot.nameZone.fontSize}px)`,
+    fontSize: `${(slot.nameZone.fontSize / template.width) * 100}cqi`,
     color: slot.nameZone.color,
     background: slot.nameZone.background,
     transform: `rotate(${slot.nameZone.rotation || 0}deg)`,
@@ -195,12 +200,14 @@ function PlayerSlot({
     fontStyle: slot.nameZone.fontStyle,
     letterSpacing: slot.nameZone.letterSpacing,
     textShadow: slot.nameZone.textShadow,
+    ...(slot.nameZone.style || {}),
   }
 
   const renderStyle = {
     transform: `translate(calc(-50% + ${player.x}%), calc(-50% + ${player.y}%)) scale(${player.flipped ? -player.scale : player.scale}, ${player.scale})`,
     opacity: player.opacity / 100,
-    pointerEvents: interactionLayer === 'primary' ? 'auto' : 'none',
+    pointerEvents: 'auto',
+    zIndex: interactionLayer === 'primary' ? 2 : 1,
     filter: template.renderFilter,
   }
 
@@ -208,6 +215,7 @@ function PlayerSlot({
     transform: `translate(calc(-50% + ${player.secondaryX}%), calc(-50% + ${player.secondaryY}%)) scale(${player.secondaryFlipped ? -player.secondaryScale : player.secondaryScale}, ${player.secondaryScale})`,
     opacity: player.secondaryOpacity / 100,
     pointerEvents: 'auto',
+    zIndex: interactionLayer === 'secondary' ? 2 : 1,
     filter: template.renderFilter,
   }
 
