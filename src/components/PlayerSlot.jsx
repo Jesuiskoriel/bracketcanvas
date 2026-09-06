@@ -269,7 +269,7 @@ function PlayerSlot({
       {player.secondaryRender && (
         <img
           ref={secondaryRef}
-          className="player-render player-render-secondary"
+          className={`player-render player-render-secondary${selectedInThisSlot && selectedLayer.layer === 'secondary' ? ' is-active' : ''}`}
           data-psd-key={`player-${player.id}-character-2`}
           data-psd-role="character"
           src={player.secondaryRender}
@@ -282,7 +282,7 @@ function PlayerSlot({
       {player.render && (
         <img
           ref={primaryRef}
-          className="player-render player-render-primary"
+          className={`player-render player-render-primary${selectedInThisSlot && selectedLayer.layer === 'primary' ? ' is-active' : ''}`}
           data-psd-key={`player-${player.id}-character-1`}
           data-psd-role="character"
           src={player.render}

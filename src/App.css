@@ -842,6 +842,7 @@
 .slot-texture { position: absolute; z-index: 1; display: block; object-fit: cover; background-color: #c6944f; filter: saturate(.84) contrast(1.05) brightness(.9); pointer-events: none; user-select: none; }
 .player-slot { position: absolute; overflow: hidden; }
 .player-render { position: absolute; left: 50%; top: 48%; width: 92%; max-width: none; cursor: grab; touch-action: none; user-select: none; transform-origin: center; filter: saturate(.92) contrast(1.04); }
+.player-render.is-active { outline: 2px solid rgba(136, 232, 255, .88); outline-offset: 2px; filter: saturate(1.05) contrast(1.08) drop-shadow(0 0 5px rgba(96, 220, 255, .36)); }
 .player-render.is-dragging { cursor: grabbing; }
 .player-render-secondary { z-index: 2; }
 .player-render-primary { z-index: 3; }

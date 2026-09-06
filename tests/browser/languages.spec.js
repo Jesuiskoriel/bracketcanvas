@@ -159,6 +159,12 @@ for (const width of [1440, 390]) {
     await page.locator('#first-character').selectOption(customSkinId)
     await expect(page.locator('#first-render')).toContainText('Custom Mii')
     await expect(page.locator('.player-render-primary').first()).toHaveAttribute('src', /^data:image\/png/)
+    await page.locator('#first-secondary-character').selectOption(customSkinId)
+    await expect(page.locator('.player-render-secondary').first()).toHaveAttribute('src', /^data:image\/png/)
+    await expect(page.getByRole('button', { name: 'Artwork 2 active on canvas' })).toBeVisible()
+    await page.locator('.player-render-primary').first().dblclick({ force: true })
+    await expect(page.locator('.player-render-primary.is-active').first()).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Artwork 1 active on canvas' })).toBeVisible()
     page.once('dialog', async (dialog) => {
       expect(dialog.message()).toContain('Custom font name')
       await dialog.accept('Custom Font')
