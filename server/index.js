@@ -543,6 +543,36 @@ const handleApi = async (request, response, pathname) => {
     return
   }
 
+  const adminProjectsMatch = pathname.match(/^\/api\/admin\/users\/([^/]+)\/projects$/)
+  if (adminProjectsMatch && request.method === 'GET') {
+    const admin = requireAdmin(request, response)
+    if (!admin) return
+    const targetId = decodeURIComponent(adminProjectsMatch[1])
+    const target = database.prepare(`
+      SELECT id, email, display_name, role, disabled_at FROM users WHERE id = ?
+    `).get(targetId)
+    if (!target) {
+      sendJson(response, 404, { error: 'Utilisateur introuvable.' })
+      return
+    }
+    const workspace = database.prepare(`
+      SELECT data, updated_at, revision FROM workspaces WHERE user_id = ?
+    `).get(targetId)
+    sendJson(response, 200, {
+      user: {
+        id: target.id,
+        email: target.email,
+        displayName: target.display_name,
+        role: target.role,
+        disabledAt: target.disabled_at,
+      },
+      collection: workspace ? JSON.parse(workspace.data) : null,
+      updatedAt: workspace?.updated_at || null,
+      revision: Number(workspace?.revision) || 0,
+    })
+    return
+  }
+
   const adminStatusMatch = pathname.match(/^\/api\/admin\/users\/([^/]+)\/status$/)
   if (adminStatusMatch && request.method === 'PATCH') {
     const admin = requireAdmin(request, response)

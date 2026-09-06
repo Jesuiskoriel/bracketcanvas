@@ -80,4 +80,7 @@ export default {
   'Le layout est choisi selon la direction et le niveau de variation.': 'La composition est choisie selon la direction artistique et le niveau de variation.',
   'BracketCanvas choisit librement la direction, le layout, les formes, la palette et le traitement graphique.': 'BracketCanvas choisit librement la direction artistique, la composition, les formes, la palette et le traitement graphique.',
   'Pour partager un feedback ou signaler un problème, ajoute': 'Pour donner ton avis ou signaler un problème, ajoute',
+  'Consulte les comptes et contrôle leur accès à l’application.': 'Consulte les comptes, contrôle leur accès et visualise leurs canevas.',
+  'Canvas de {0}': 'Canevas de {0}',
+  'Voir les canvas': 'Voir les canevas',
 }

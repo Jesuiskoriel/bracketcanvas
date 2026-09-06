@@ -78,6 +78,10 @@ export const removeWorkspaceMember = (workspaceId, userId) => request(
 
 export const loadAdminUsers = () => request('/api/admin/users')
 
+export const loadAdminUserProjects = (userId) => request(
+  `/api/admin/users/${encodeURIComponent(userId)}/projects`,
+)
+
 export const setAdminUserDisabled = (userId, disabled) => request(
   `/api/admin/users/${encodeURIComponent(userId)}/status`,
   {

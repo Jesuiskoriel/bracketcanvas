@@ -3,6 +3,35 @@ import { english } from '../../shared/i18n.js'
 import { DatabaseSync } from 'node:sqlite'
 
 const password = 'Local-test-password-123'
+const createStoredProjectCollection = () => {
+  const now = new Date().toISOString()
+  const project = {
+    id: 'project-admin-target',
+    name: 'Target Cup',
+    createdAt: now,
+    updatedAt: now,
+    data: {
+      templateId: 'zero',
+      templateRevision: 1,
+      selectedLayer: { playerId: 'first', layer: 'primary' },
+      exportScale: 4,
+      eventDetails: {
+        eventName: 'Target Cup',
+        subtitle: 'Admin preview',
+        date: '12/09/2026',
+        participantCount: '42',
+        eventType: 'weekly',
+        tournamentLogo: '',
+        tournamentLogoName: '',
+      },
+      players: [
+        { id: 'first', placement: 1, playerName: 'Target Player', character: '', renderId: '', secondaryCharacter: '', secondaryRenderId: '', teamLogo: '', teamLogoName: '', x: 0, y: 0, scale: 1, flipped: false, opacity: 100, secondaryX: 18, secondaryY: 0, secondaryScale: 1, secondaryFlipped: false, secondaryOpacity: 100 },
+      ],
+    },
+  }
+  return { version: 1, activeProjectId: project.id, projects: { [project.id]: project } }
+}
+
 const unknownFrench = async (locator) => {
   const lines = (await locator.innerText()).split('\n').map((line) => line.trim())
   return lines.filter((line) => Object.hasOwn(english, line) && english[line] !== line && line.length > 3)
@@ -47,6 +76,24 @@ for (const width of [1440, 390]) {
     if (width === 1440) {
       const database = new DatabaseSync(process.env.BRACKETCANVAS_TEST_DB)
       database.prepare('UPDATE users SET role = ? WHERE email = ?').run('admin', email)
+      database.prepare(`
+        INSERT INTO users (id, email, display_name, password_hash, created_at, role)
+        VALUES (?, ?, ?, ?, ?, 'user')
+      `).run(
+        'user-admin-target',
+        'admin-target@example.test',
+        'Target User',
+        'scrypt:00000000000000000000000000000000:00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
+        new Date().toISOString(),
+      )
+      database.prepare(`
+        INSERT INTO workspaces (user_id, version, data, updated_at, revision)
+        VALUES (?, 1, ?, ?, 1)
+      `).run(
+        'user-admin-target',
+        JSON.stringify(createStoredProjectCollection()),
+        new Date().toISOString(),
+      )
       database.close()
     }
     await page.goto('/')
@@ -84,7 +131,15 @@ for (const width of [1440, 390]) {
     if (width === 1440) {
       await page.getByRole('button', { name: 'Administration', exact: true }).click()
       await expect(page.getByRole('columnheader', { name: 'Last active' })).toBeVisible()
+      await page.getByRole('button', { name: 'View canvases' }).first().click()
+      await expect(page.getByRole('heading', { name: /canvases$/ })).toBeVisible()
+      await page.getByLabel('Project to inspect').selectOption('project-admin-target')
+      await expect(page.locator('.admin-project-canvas-frame .top8-canvas')).toBeVisible()
+      await expect(page.locator('.admin-project-canvas-frame')).toContainText('Target Player')
       await page.getByRole('button', { name: 'Close administration' }).click()
+    } else {
+      const forbidden = await page.request.get('/api/admin/users/user-admin-target/projects')
+      expect(forbidden.status()).toBe(403)
     }
     await page.screenshot({ path: testInfo.outputPath(`editor-${width}.png`), fullPage: true })
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy()
