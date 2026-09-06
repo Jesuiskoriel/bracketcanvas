@@ -16,6 +16,7 @@ import {
   verifyPassword,
 } from './auth.js'
 import { closeDatabase, database } from './database.js'
+import { mailerIsConfigured, sendPasswordResetEmail } from './mailer.js'
 
 const port = Number(process.env.PORT) || 3000
 const distDirectory = resolve('./dist')
@@ -240,7 +241,16 @@ const handleApi = async (request, response, pathname) => {
     if (userRecord && !userRecord.disabled_at) {
       const reset = createPasswordResetToken(userRecord.id)
       resetLink = buildPasswordResetUrl(request, reset.token)
-      console.info(`Password reset link for ${userRecord.email}: ${resetLink}`)
+      if (mailerIsConfigured()) {
+        try {
+          await sendPasswordResetEmail({ to: userRecord.email, resetLink })
+        } catch (error) {
+          console.error(`Password reset email failed for ${userRecord.email}:`, error)
+          console.info(`Password reset link for ${userRecord.email}: ${resetLink}`)
+        }
+      } else {
+        console.info(`Password reset link for ${userRecord.email}: ${resetLink}`)
+      }
     }
     sendJson(response, 200, {
       ok: true,

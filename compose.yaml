@@ -11,6 +11,12 @@ services:
       PORT: 3000
       DATABASE_PATH: /app/data/bracketcanvas.sqlite
       PUBLIC_APP_URL: ${BRACKETCANVAS_PUBLIC_APP_URL:-https://bracketcanvas.jesuiskoriel.dev}
+      MAIL_FROM: "${BRACKETCANVAS_MAIL_FROM:-BracketCanvas <no-reply@bracketcanvas.jesuiskoriel.dev>}"
+      SMTP_HOST: ${BRACKETCANVAS_SMTP_HOST:-}
+      SMTP_PORT: ${BRACKETCANVAS_SMTP_PORT:-587}
+      SMTP_SECURE: ${BRACKETCANVAS_SMTP_SECURE:-false}
+      SMTP_USER: ${BRACKETCANVAS_SMTP_USER:-}
+      SMTP_PASS: ${BRACKETCANVAS_SMTP_PASS:-}
       ALLOWED_ORIGINS: ${BRACKETCANVAS_ORIGIN:-https://bracketcanvas.jesuiskoriel.dev}
       ADMIN_EMAILS: ${BRACKETCANVAS_ADMIN_EMAILS:-}
     expose:

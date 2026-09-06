@@ -15,7 +15,8 @@ ENV NODE_ENV=production \
 WORKDIR /app
 COPY --from=build /app/dist ./dist
 COPY server ./server
-COPY package.json ./package.json
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
 
 RUN mkdir -p /app/data && chown -R node:node /app
 USER node
