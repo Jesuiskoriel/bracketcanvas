@@ -79,6 +79,12 @@ const normalizeCollection = (value) => {
       ? value.activeProjectId
       : projectIds[0],
     projects,
+    customCharacters: Array.isArray(value.customCharacters)
+      ? value.customCharacters.filter(isObject)
+      : [],
+    customFonts: Array.isArray(value.customFonts)
+      ? value.customFonts.filter(isObject)
+      : [],
   }
 }
 

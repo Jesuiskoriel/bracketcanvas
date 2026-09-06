@@ -12,6 +12,7 @@ const Top8Canvas = forwardRef(function Top8Canvas(
     template,
     players,
     eventDetails,
+    customFont,
     selectedLayer,
     onPlayerChange,
     onSelectLayer,
@@ -25,6 +26,9 @@ const Top8Canvas = forwardRef(function Top8Canvas(
     date: eventDetails.date,
     participantCount: t(Number(eventDetails.participantCount) === 1 ? '{0} participant' : '{0} participants', { 0: eventDetails.participantCount || '0' }),
   }
+  const customFontFamily = customFont
+    ? `"BracketCanvas Custom Font ${customFont.id}", "Hylia Serif", serif`
+    : ''
 
   return (
     <div
@@ -32,6 +36,9 @@ const Top8Canvas = forwardRef(function Top8Canvas(
       className={`top8-canvas top8-canvas-${template.visualStyle || 'default'}`}
       style={{
         aspectRatio: `${template.width} / ${template.height}`,
+        ...(customFont
+          ? { '--canvas-font-family': `"BracketCanvas Custom Font ${customFont.id}", "Hylia Serif", serif` }
+          : {}),
         ...template.canvasStyle,
       }}
       aria-label={t("Aperçu du Top 8")}
@@ -101,7 +108,7 @@ const Top8Canvas = forwardRef(function Top8Canvas(
             textAlign: field.align,
             color: field.color,
             background: field.background,
-            fontFamily: field.fontFamily,
+            fontFamily: customFontFamily || field.fontFamily,
             fontWeight: field.fontWeight,
             fontStyle: field.fontStyle,
             letterSpacing: field.letterSpacing,
@@ -159,6 +166,7 @@ const Top8Canvas = forwardRef(function Top8Canvas(
           slot={slot}
           player={players.find((player) => player.id === slot.id)}
           template={template}
+          customFont={customFont}
           selectedLayer={selectedLayer}
           onChange={(changes) => onPlayerChange(slot.id, changes)}
           onSelectLayer={(layer) => onSelectLayer(slot.id, layer)}
@@ -188,6 +196,7 @@ const Top8Canvas = forwardRef(function Top8Canvas(
             player={player}
             slot={template.slots.find((slot) => slot.id === player.id)}
             template={template}
+            customFont={customFont}
             onChange={(changes) => onPlayerChange(player.id, changes)}
           />
         ))}

@@ -29,6 +29,7 @@ function PlayerSlot({
   slot,
   player,
   template,
+  customFont,
   selectedLayer,
   onSelectLayer,
   onChange,
@@ -197,7 +198,9 @@ function PlayerSlot({
     color: slot.nameZone.color,
     background: slot.nameZone.background,
     transform: `rotate(${slot.nameZone.rotation || 0}deg)`,
-    fontFamily: slot.nameZone.fontFamily,
+    fontFamily: customFont
+      ? `"BracketCanvas Custom Font ${customFont.id}", "Hylia Serif", serif`
+      : slot.nameZone.fontFamily,
     fontWeight: slot.nameZone.fontWeight,
     fontStyle: slot.nameZone.fontStyle,
     letterSpacing: slot.nameZone.letterSpacing,
@@ -258,6 +261,7 @@ function PlayerSlot({
           player={player}
           slot={slot}
           template={template}
+          customFont={customFont}
           insideSlot
           onChange={onChange}
         />
@@ -359,5 +363,6 @@ export default memo(PlayerSlot, (previous, next) =>
   previous.slot === next.slot &&
   previous.player === next.player &&
   previous.template === next.template &&
+  previous.customFont === next.customFont &&
   previous.selectedLayer === next.selectedLayer,
 )

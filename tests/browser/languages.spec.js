@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { english } from '../../shared/i18n.js'
 import { DatabaseSync } from 'node:sqlite'
+import path from 'node:path'
 
 const password = 'Local-test-password-123'
 const tinyPng = Buffer.from(
@@ -38,6 +39,7 @@ const createStoredProjectCollection = () => {
         tournamentLogoName: '',
         customBackground: '',
         customBackgroundName: '',
+        customFontId: '',
       },
       players: [
         { id: 'first', placement: 1, playerName: 'Target Player', character: '', renderId: '', secondaryCharacter: '', secondaryRenderId: '', teamLogo: '', teamLogoName: '', slotBackground: '', slotBackgroundName: '', teamLogoX: 60, teamLogoY: 8, teamLogoSize: 22, x: 0, y: 0, scale: 1, flipped: false, opacity: 100, secondaryX: 18, secondaryY: 0, secondaryScale: 1, secondaryFlipped: false, secondaryOpacity: 100 },
@@ -144,6 +146,26 @@ for (const width of [1440, 390]) {
     await expect.poll(() => page.locator('.team-logo').first().evaluate((element) => element.style.left)).toBe('14%')
     await expect.poll(() => page.locator('.team-logo').first().evaluate((element) => element.style.top)).toBe('22%')
     await expect.poll(() => page.locator('.team-logo').first().evaluate((element) => element.style.width)).toBe('28%')
+    page.once('dialog', async (dialog) => {
+      expect(dialog.message()).toContain('Custom skin name')
+      await dialog.accept('Custom Mii')
+    })
+    await page.locator('#custom-skin-upload').setInputFiles(tinyUpload('custom-mii.png'))
+    await expect(page.locator('#first-character')).toContainText('Custom Mii')
+    const customSkinId = await page.locator('#first-character').evaluate((select) =>
+      [...select.options].find((option) => option.textContent === 'Custom Mii')?.value,
+    )
+    expect(customSkinId).toMatch(/^custom-skin-/)
+    await page.locator('#first-character').selectOption(customSkinId)
+    await expect(page.locator('#first-render')).toContainText('Custom Mii')
+    await expect(page.locator('.player-render-primary').first()).toHaveAttribute('src', /^data:image\/png/)
+    page.once('dialog', async (dialog) => {
+      expect(dialog.message()).toContain('Custom font name')
+      await dialog.accept('Custom Font')
+    })
+    await page.locator('#custom-font-upload').setInputFiles(path.join(process.cwd(), 'HyliaSerifBeta-Regular.otf'))
+    await expect(page.locator('#custom-font-select')).toContainText('Custom Font')
+    await expect(page.locator('.top8-canvas')).toHaveAttribute('style', /--canvas-font-family/)
     await page.getByRole('button', { name: 'Palette', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'Global palette' })).toBeVisible()
     expect(await unknownFrench(page.locator('.palette-editor'))).toEqual([])

@@ -1,5 +1,5 @@
 import { t, msg, useLanguage } from './i18n.js'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import PlayerEditor from './components/PlayerEditor.jsx'
 import AdminPanel from './components/AdminPanel.jsx'
 import PaletteEditor from './components/PaletteEditor.jsx'
@@ -11,7 +11,8 @@ import ProjectTemplatePanel from './components/ProjectTemplatePanel.jsx'
 import StartggImporter from './components/StartggImporter.jsx'
 import TemplateEditor from './components/TemplateEditor.jsx'
 import Top8Canvas from './components/Top8Canvas.jsx'
-import { characterLibrary, getCharacter } from './data/characterLibrary.js'
+import CustomAssetsPanel from './components/CustomAssetsPanel.jsx'
+import { characterLibrary as baseCharacterLibrary } from './data/characterLibrary.js'
 import {
   createProjectCollection,
   createProjectRecord,
@@ -118,6 +119,7 @@ const createInitialEventDetails = () => ({
   tournamentLogoName: '',
   customBackground: '',
   customBackgroundName: '',
+  customFontId: '',
 })
 
 const INITIAL_SELECTED_LAYER = {
@@ -131,8 +133,48 @@ const isObject = (value) =>
 const restorePersistentImage = (source) =>
   typeof source === 'string' && source.startsWith('data:') ? source : ''
 
-const loadRenderSource = async (characterId, renderId) => {
-  const render = getCharacter(characterId)?.renders.find(
+const restorePersistentAsset = (source) =>
+  typeof source === 'string' && source.startsWith('data:') ? source : ''
+
+const createAssetId = (prefix) => {
+  if (globalThis.crypto?.randomUUID) return `${prefix}-${crypto.randomUUID()}`
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+}
+
+const createCustomCharacterLibrary = (customCharacters = []) =>
+  customCharacters
+    .filter((character) =>
+      isObject(character) &&
+      typeof character.id === 'string' &&
+      typeof character.name === 'string' &&
+      restorePersistentAsset(character.source),
+    )
+    .map((character) => ({
+      id: character.id,
+      name: character.name,
+      custom: true,
+      renders: [{
+        id: 'default',
+        name: character.name,
+        custom: true,
+        load: async () => character.source,
+      }],
+    }))
+
+const getCharacterFromLibrary = (library, characterId) =>
+  library.find((character) => character.id === characterId)
+
+const normalizeAssetName = (value) =>
+  String(value || '').trim().replace(/\s+/g, ' ').slice(0, 48)
+
+const getCustomFontFamily = (font) =>
+  font ? `BracketCanvas Custom Font ${font.id}` : ''
+
+const escapeCssString = (value) =>
+  String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\a ')
+
+const loadRenderSource = async (characterId, renderId, library = baseCharacterLibrary) => {
+  const render = getCharacterFromLibrary(library, characterId)?.renders.find(
     (candidate) => candidate.id === renderId,
   )
   return render ? render.load() : ''
@@ -142,6 +184,7 @@ const restorePlayers = async (
   savedPlayers = [],
   template = zeroTemplate,
   shouldResetTemplateFields = false,
+  characterLibrary = baseCharacterLibrary,
 ) => {
   const safeSavedPlayers = Array.isArray(savedPlayers) ? savedPlayers : []
 
@@ -170,10 +213,11 @@ const restorePlayers = async (
         ? { ...player, ...constrainRankPosition(player, slot) }
         : player
       const [render, secondaryRender] = await Promise.all([
-        loadRenderSource(restoredPlayer.character, restoredPlayer.renderId).catch(() => ''),
+        loadRenderSource(restoredPlayer.character, restoredPlayer.renderId, characterLibrary).catch(() => ''),
         loadRenderSource(
           restoredPlayer.secondaryCharacter,
           restoredPlayer.secondaryRenderId,
+          characterLibrary,
         ).catch(() => ''),
       ])
 
@@ -212,7 +256,7 @@ const createPersistableProject = ({
   exportScale,
 })
 
-const restoreProjectState = async (savedProject = {}) => {
+const restoreProjectState = async (savedProject = {}, characterLibrary = baseCharacterLibrary) => {
   const project = isObject(savedProject) ? savedProject : {}
   const savedGeneratedTemplate = isObject(project.generatedTemplate)
     ? {
@@ -231,6 +275,7 @@ const restoreProjectState = async (savedProject = {}) => {
     template,
     project.templateId !== template.id ||
       project.templateRevision !== template.revision,
+    characterLibrary,
   )
   const eventDetails = {
     ...createInitialEventDetails(),
@@ -309,10 +354,28 @@ function App({ currentUser, onLogout }) {
   const [isAdminOpen, setIsAdminOpen] = useState(false)
   const [activeWorkspaceId, setActiveWorkspaceId] = useState(currentUser.id)
   const [workspaces, setWorkspaces] = useState([])
+  const [customCharacters, setCustomCharacters] = useState([])
+  const [customFonts, setCustomFonts] = useState([])
   const [hasCloudConflict, setHasCloudConflict] = useState(false)
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false)
   const playersRef = useRef(players)
   playersRef.current = players
+  const activeCharacterLibrary = useMemo(
+    () => [
+      ...baseCharacterLibrary,
+      ...createCustomCharacterLibrary(customCharacters),
+    ],
+    [customCharacters],
+  )
+  const activeCustomFont = customFonts.find(
+    (font) => font.id === eventDetails.customFontId,
+  ) || null
+  const customFontCss = customFonts
+    .filter((font) => font.id && font.source)
+    .map((font) =>
+      `@font-face { font-family: "${escapeCssString(getCustomFontFamily(font))}"; src: url("${font.source}"); font-display: swap; }`,
+    )
+    .join('\n')
 
   const applyRestoredState = useCallback((restoredState) => {
     setPlayers(restoredState.players)
@@ -413,8 +476,16 @@ function App({ currentUser, onLogout }) {
           )
         }
         collection = storeCollection(collection, false)
+        const restoredCustomCharacters = collection.customCharacters || []
+        const restoredCustomFonts = collection.customFonts || []
+        const restoredCharacterLibrary = [
+          ...baseCharacterLibrary,
+          ...createCustomCharacterLibrary(restoredCustomCharacters),
+        ]
+        setCustomCharacters(restoredCustomCharacters)
+        setCustomFonts(restoredCustomFonts)
         const activeProject = collection.projects[collection.activeProjectId]
-        const restoredState = await restoreProjectState(activeProject?.data)
+        const restoredState = await restoreProjectState(activeProject?.data, restoredCharacterLibrary)
         if (!isActive) return
 
         applyRestoredState(restoredState)
@@ -487,9 +558,17 @@ function App({ currentUser, onLogout }) {
         : remote.collection
       const normalized = saveProjectCollection(synchronizedCollection, activeWorkspaceId)
       setCollection(normalized)
+      const restoredCustomCharacters = normalized.customCharacters || []
+      const restoredCustomFonts = normalized.customFonts || []
+      const restoredCharacterLibrary = [
+        ...baseCharacterLibrary,
+        ...createCustomCharacterLibrary(restoredCustomCharacters),
+      ]
+      setCustomCharacters(restoredCustomCharacters)
+      setCustomFonts(restoredCustomFonts)
       const activeProject = normalized.projects[normalized.activeProjectId]
       skipNextAutoSaveRef.current = true
-      applyRestoredState(await restoreProjectState(activeProject?.data))
+      applyRestoredState(await restoreProjectState(activeProject?.data, restoredCharacterLibrary))
       setHasCloudConflict(false)
       setSaveStatus(msg("Synchronisé avec les collaborateurs"))
     } catch (error) {
@@ -691,7 +770,7 @@ function App({ currentUser, onLogout }) {
   }
 
   const selectCharacter = async (playerId, characterId, secondary = false) => {
-    const character = getCharacter(characterId)
+    const character = getCharacterFromLibrary(activeCharacterLibrary, characterId)
     const firstRender = character?.renders[0]
     const renderId = firstRender?.id || ''
     const characterKey = secondary ? 'secondaryCharacter' : 'character'
@@ -766,7 +845,7 @@ function App({ currentUser, onLogout }) {
     renderId,
     secondary = false,
   ) => {
-    const selectedRender = getCharacter(characterId)?.renders.find(
+    const selectedRender = getCharacterFromLibrary(activeCharacterLibrary, characterId)?.renders.find(
       (render) => render.id === renderId,
     )
 
@@ -851,6 +930,118 @@ function App({ currentUser, onLogout }) {
   const selectCustomBackground = (file) =>
     selectTournamentImage('customBackground', 'customBackgroundName', "Le fond personnalisé n'a pas pu être importé.", file)
 
+  const updateWorkspaceAssets = (changes) => {
+    const savedCollection = persistCurrentProject() || projectCollectionRef.current
+    if (!savedCollection) return null
+    try {
+      return storeCollection({ ...savedCollection, ...changes })
+    } catch (error) {
+      console.error(error)
+      setSaveStatus(getSaveErrorMessage(error))
+      return null
+    }
+  }
+
+  const addCustomCharacter = async (file) => {
+    if (!file) return
+    const name = normalizeAssetName(
+      window.prompt(t("Nom du skin personnalisé"), file.name.replace(/\.[^.]+$/, '')),
+    )
+    if (!name) {
+      setSaveStatus(msg("Import annulé : donne un nom au skin."))
+      return
+    }
+
+    try {
+      const source = await fileToDataUrl(file)
+      const nextCharacters = [
+        ...customCharacters,
+        {
+          id: createAssetId('custom-skin'),
+          name,
+          source,
+          fileName: file.name,
+          createdAt: new Date().toISOString(),
+        },
+      ]
+      setCustomCharacters(nextCharacters)
+      const savedCollection = updateWorkspaceAssets({ customCharacters: nextCharacters })
+      if (!savedCollection) setCustomCharacters(customCharacters)
+    } catch (error) {
+      console.error(error)
+      setSaveStatus(msg("Le skin personnalisé n'a pas pu être importé."))
+    }
+  }
+
+  const removeCustomCharacter = (characterId) => {
+    const character = customCharacters.find((candidate) => candidate.id === characterId)
+    if (!character) return
+    if (!window.confirm(t("Retirer le skin personnalisé {0} ?", { 0: character.name }))) return
+
+    const nextCharacters = customCharacters.filter((candidate) => candidate.id !== characterId)
+    setCustomCharacters(nextCharacters)
+    setPlayers((currentPlayers) =>
+      currentPlayers.map((player) => ({
+        ...player,
+        ...(player.character === characterId
+          ? { character: '', renderId: '', render: '', ...DEFAULT_RENDER_TRANSFORM }
+          : {}),
+        ...(player.secondaryCharacter === characterId
+          ? {
+              secondaryCharacter: '',
+              secondaryRenderId: '',
+              secondaryRender: '',
+              ...DEFAULT_SECONDARY_RENDER_TRANSFORM,
+            }
+          : {}),
+      })),
+    )
+    const savedCollection = updateWorkspaceAssets({ customCharacters: nextCharacters })
+    if (!savedCollection) setCustomCharacters(customCharacters)
+  }
+
+  const addCustomFont = async (file) => {
+    if (!file) return
+    const name = normalizeAssetName(
+      window.prompt(t("Nom de la police personnalisée"), file.name.replace(/\.[^.]+$/, '')),
+    )
+    if (!name) {
+      setSaveStatus(msg("Import annulé : donne un nom à la police."))
+      return
+    }
+
+    try {
+      const source = await fileToDataUrl(file)
+      const font = {
+        id: createAssetId('custom-font'),
+        name,
+        source,
+        fileName: file.name,
+        createdAt: new Date().toISOString(),
+      }
+      const nextFonts = [...customFonts, font]
+      setCustomFonts(nextFonts)
+      updateEventDetails({ customFontId: font.id })
+      const savedCollection = updateWorkspaceAssets({ customFonts: nextFonts })
+      if (!savedCollection) setCustomFonts(customFonts)
+    } catch (error) {
+      console.error(error)
+      setSaveStatus(msg("La police personnalisée n'a pas pu être importée."))
+    }
+  }
+
+  const removeCustomFont = (fontId) => {
+    const font = customFonts.find((candidate) => candidate.id === fontId)
+    if (!font) return
+    if (!window.confirm(t("Retirer la police personnalisée {0} ?", { 0: font.name }))) return
+
+    const nextFonts = customFonts.filter((candidate) => candidate.id !== fontId)
+    setCustomFonts(nextFonts)
+    if (eventDetails.customFontId === fontId) updateEventDetails({ customFontId: '' })
+    const savedCollection = updateWorkspaceAssets({ customFonts: nextFonts })
+    if (!savedCollection) setCustomFonts(customFonts)
+  }
+
   const importStartggTop8 = async (importedProject) => {
     const importedPlayers = await Promise.all(
       players.map(async (currentPlayer, index) => {
@@ -876,8 +1067,8 @@ function App({ currentUser, onLogout }) {
           ),
         ].slice(0, 2)
         const [primaryId = '', secondaryId = ''] = mappedCharacterIds
-        const primaryRender = getCharacter(primaryId)?.renders[0]
-        const secondaryRender = getCharacter(secondaryId)?.renders[0]
+        const primaryRender = getCharacterFromLibrary(baseCharacterLibrary, primaryId)?.renders[0]
+        const secondaryRender = getCharacterFromLibrary(baseCharacterLibrary, secondaryId)?.renders[0]
         const [render, secondaryRenderSource] = await Promise.all([
           primaryRender?.load().catch(() => '') || '',
           secondaryRender?.load().catch(() => '') || '',
@@ -930,7 +1121,7 @@ function App({ currentUser, onLogout }) {
     try {
       const nextCollection = { ...collection, activeProjectId: projectId }
       storeCollection(nextCollection)
-      applyRestoredState(await restoreProjectState(project.data))
+      applyRestoredState(await restoreProjectState(project.data, activeCharacterLibrary))
     } catch (error) {
       console.error(error)
       setSaveStatus(
@@ -1209,6 +1400,7 @@ function App({ currentUser, onLogout }) {
 
   return (
     <main className="app-shell">
+      {customFontCss && <style>{customFontCss}</style>}
       <aside className="editor-panel" aria-labelledby="app-title">
         <header className="app-header">
           <div className="app-brand">
@@ -1264,8 +1456,20 @@ function App({ currentUser, onLogout }) {
           onBackgroundChange={selectCustomBackground}
         />
 
+        <CustomAssetsPanel
+          customCharacters={customCharacters}
+          customFonts={customFonts}
+          selectedFontId={eventDetails.customFontId}
+          disabled={isSaving || isRestoring}
+          onAddCharacter={addCustomCharacter}
+          onRemoveCharacter={removeCustomCharacter}
+          onAddFont={addCustomFont}
+          onRemoveFont={removeCustomFont}
+          onSelectFont={(customFontId) => updateEventDetails({ customFontId })}
+        />
+
         <StartggImporter
-          availableCharacterIds={characterLibrary.map(({ id }) => id)}
+          availableCharacterIds={baseCharacterLibrary.map(({ id }) => id)}
           onConfirm={importStartggTop8}
         />
 
@@ -1307,7 +1511,7 @@ function App({ currentUser, onLogout }) {
               key={player.id}
               player={player}
               slotNumber={index + 1}
-              characters={characterLibrary}
+              characters={activeCharacterLibrary}
               canvasWidth={activeTemplate.width}
               canvasHeight={activeTemplate.height}
               selectedLayer={selectedLayer}
@@ -1392,6 +1596,7 @@ function App({ currentUser, onLogout }) {
             template={activeTemplate}
             players={players}
             eventDetails={eventDetails}
+            customFont={activeCustomFont}
             selectedLayer={selectedLayer}
             onPlayerChange={updatePlayer}
             onSelectLayer={(playerId, layer) =>

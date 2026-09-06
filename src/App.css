@@ -454,6 +454,66 @@
   border-bottom: 1px solid var(--border);
 }
 
+.custom-assets-panel {
+  padding: 20px 22px;
+  background: #0a1018;
+  border-bottom: 1px solid var(--border);
+}
+
+.custom-assets-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.custom-assets-list {
+  display: grid;
+  gap: 7px;
+  margin-top: 14px;
+}
+
+.custom-asset-row {
+  min-height: 38px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 0 0 0 11px;
+  color: var(--text);
+  font-size: .74rem;
+  background: var(--input);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
+
+.custom-asset-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.custom-asset-row button {
+  align-self: stretch;
+  padding: 0 11px;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: .7rem;
+  font-weight: 650;
+  background: transparent;
+  border: 0;
+  border-left: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.custom-asset-row button:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+
+.custom-asset-row button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .section-heading, .players-heading { margin-bottom: 16px; }
 .section-heading h2, .players-heading h2 { margin: 4px 0 0; }
 .template-fields { display: grid; gap: 14px; }
@@ -776,7 +836,7 @@
 .template-layer { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; user-select: none; }
 .template-decoration { position: absolute; object-fit: contain; pointer-events: none; user-select: none; transform-origin: center; filter: drop-shadow(0 0 4px rgba(124, 235, 255, .32)); }
 .tournament-logo { position: absolute; object-fit: contain; object-position: left bottom; pointer-events: none; user-select: none; filter: drop-shadow(0 1px 3px rgba(0, 0, 0, .72)); }
-.template-text { position: absolute; display: block; overflow: hidden; color: white; font-family: "Hylia Serif", serif; font-weight: 400; letter-spacing: .01em; text-shadow: 0 1px 1px rgba(0, 0, 0, .35); white-space: normal; }
+.template-text { position: absolute; display: block; overflow: hidden; color: white; font-family: var(--canvas-font-family, "Hylia Serif", serif); font-weight: 400; letter-spacing: .01em; text-shadow: 0 1px 1px rgba(0, 0, 0, .35); white-space: normal; }
 .template-text-eventName { font-weight: 600; }
 .custom-background-layer { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; object-fit: cover; pointer-events: none; user-select: none; }
 .slot-texture { position: absolute; z-index: 1; display: block; object-fit: cover; background-color: #c6944f; filter: saturate(.84) contrast(1.05) brightness(.9); pointer-events: none; user-select: none; }
@@ -787,10 +847,10 @@
 .player-render-primary { z-index: 3; }
 .slot-shade { position: absolute; z-index: 4; inset: 0; background: linear-gradient(180deg, rgba(75, 39, 7, .08), rgba(7, 9, 12, .68) 100%); pointer-events: none; }
 .team-logo { position: absolute; z-index: 5; object-fit: contain; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .8)); pointer-events: none; user-select: none; }
-.player-name { position: absolute; z-index: 6; display: flex; align-items: center; overflow: hidden; color: #fff8df; font-family: "Hylia Serif", serif; font-weight: 700; line-height: 1; letter-spacing: .015em; text-shadow: 0 1px 2px rgba(0, 0, 0, .95); text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; pointer-events: none; }
+.player-name { position: absolute; z-index: 6; display: flex; align-items: center; overflow: hidden; color: #fff8df; font-family: var(--canvas-font-family, "Hylia Serif", serif); font-weight: 700; line-height: 1; letter-spacing: .015em; text-shadow: 0 1px 2px rgba(0, 0, 0, .95); text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; pointer-events: none; }
 .player-name.is-empty { color: rgba(255, 248, 223, .68); font-family: ui-sans-serif, system-ui, sans-serif; font-weight: 650; letter-spacing: 0; }
 .placement-number-clip { position: absolute; display: block; overflow: hidden; pointer-events: none; user-select: none; }
-.placement-number { position: absolute; display: grid; place-items: center; font-family: "Hylia Serif", serif; font-weight: 400; line-height: 1; cursor: grab; touch-action: none; pointer-events: auto; transform: translate(-50%, -50%); paint-order: stroke; -webkit-text-stroke: 1px #ead8a7; text-shadow: 0 2px 2px rgba(0, 0, 0, .7); }
+.placement-number { position: absolute; display: grid; place-items: center; font-family: var(--canvas-font-family, "Hylia Serif", serif); font-weight: 400; line-height: 1; cursor: grab; touch-action: none; pointer-events: auto; transform: translate(-50%, -50%); paint-order: stroke; -webkit-text-stroke: 1px #ead8a7; text-shadow: 0 2px 2px rgba(0, 0, 0, .7); }
 .placement-number.is-dragging { cursor: grabbing; }
 .auto-placement-debug { position: absolute; z-index: 50; inset: 0; overflow: hidden; pointer-events: none; }
 .auto-placement-debug-safe,

@@ -5,6 +5,7 @@ function PlacementNumber({
   player,
   slot,
   template,
+  customFont,
   insideSlot = false,
   onChange,
 }) {
@@ -196,6 +197,9 @@ function PlacementNumber({
           color: player.rankColor,
           fontSize: `${(safeRank.rankSize / template.width) * 100}cqi`,
           ...template.rankStyle,
+          ...(customFont
+            ? { fontFamily: `"BracketCanvas Custom Font ${customFont.id}", "Hylia Serif", serif` }
+            : {}),
         }}
       >
         {player.placement}

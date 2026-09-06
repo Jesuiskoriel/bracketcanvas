@@ -1,7 +1,7 @@
 import { t, useLanguage, getLocale } from '../i18n.js'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { loadAdminUserProjects, loadAdminUsers, setAdminUserDisabled } from '../services/accountApi.js'
-import { getCharacter } from '../data/characterLibrary.js'
+import { characterLibrary as baseCharacterLibrary } from '../data/characterLibrary.js'
 import { getTemplate } from '../templates/registry.js'
 import Top8Canvas from './Top8Canvas.jsx'
 
@@ -18,14 +18,42 @@ const getLatestActivity = ({ workspaceUpdatedAt, lastSessionAt }) => {
 const isObject = (value) =>
   value !== null && typeof value === 'object' && !Array.isArray(value)
 
-const loadRenderSource = async (characterId, renderId) => {
-  const render = getCharacter(characterId)?.renders.find(
+const createCustomCharacterLibrary = (customCharacters = []) =>
+  customCharacters
+    .filter((character) =>
+      isObject(character) &&
+      typeof character.id === 'string' &&
+      typeof character.name === 'string' &&
+      typeof character.source === 'string' &&
+      character.source.startsWith('data:'),
+    )
+    .map((character) => ({
+      id: character.id,
+      name: character.name,
+      renders: [{
+        id: 'default',
+        name: character.name,
+        load: async () => character.source,
+      }],
+    }))
+
+const getCharacterFromLibrary = (library, characterId) =>
+  library.find((character) => character.id === characterId)
+
+const getCustomFontFamily = (font) =>
+  font ? `BracketCanvas Custom Font ${font.id}` : ''
+
+const escapeCssString = (value) =>
+  String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\a ')
+
+const loadRenderSource = async (characterId, renderId, library) => {
+  const render = getCharacterFromLibrary(library, characterId)?.renders.find(
     (candidate) => candidate.id === renderId,
   )
   return render ? render.load() : ''
 }
 
-const createPreviewPlayers = async (projectData, template) => {
+const createPreviewPlayers = async (projectData, template, characterLibrary) => {
   const savedPlayers = Array.isArray(projectData?.players) ? projectData.players : []
   return Promise.all(template.slots.map(async (slot) => {
     const savedPlayer = savedPlayers.find((candidate) => candidate?.id === slot.id) || {}
@@ -64,8 +92,8 @@ const createPreviewPlayers = async (projectData, template) => {
       ...savedPlayer,
     }
     const [render, secondaryRender] = await Promise.all([
-      loadRenderSource(player.character, player.renderId).catch(() => ''),
-      loadRenderSource(player.secondaryCharacter, player.secondaryRenderId).catch(() => ''),
+      loadRenderSource(player.character, player.renderId, characterLibrary).catch(() => ''),
+      loadRenderSource(player.secondaryCharacter, player.secondaryRenderId, characterLibrary).catch(() => ''),
     ])
     return { ...player, placement: slot.placement, render, secondaryRender }
   }))
@@ -73,6 +101,17 @@ const createPreviewPlayers = async (projectData, template) => {
 
 const createProjectPreview = async (project) => {
   const projectData = isObject(project?.data) ? project.data : {}
+  const collection = isObject(project?.collection) ? project.collection : {}
+  const customCharacters = Array.isArray(collection.customCharacters)
+    ? collection.customCharacters
+    : []
+  const customFonts = Array.isArray(collection.customFonts)
+    ? collection.customFonts
+    : []
+  const characterLibrary = [
+    ...baseCharacterLibrary,
+    ...createCustomCharacterLibrary(customCharacters),
+  ]
   const generatedTemplate = isObject(projectData.generatedTemplate)
     ? {
         ...projectData.generatedTemplate,
@@ -81,19 +120,29 @@ const createProjectPreview = async (project) => {
       }
     : projectData.generatedTemplate
   const template = getTemplate(projectData.templateId, generatedTemplate, projectData.paletteState)
-  const players = await createPreviewPlayers(projectData, template)
+  const players = await createPreviewPlayers(projectData, template, characterLibrary)
+  const eventDetails = {
+    eventName: t('Nom du tournoi'),
+    subtitle: '',
+    date: '00/00/0000',
+    participantCount: '00',
+    tournamentLogo: '',
+    customBackground: '',
+    customFontId: '',
+    ...(isObject(projectData.eventDetails) ? projectData.eventDetails : {}),
+  }
+  const customFont = customFonts.find((font) => font.id === eventDetails.customFontId) || null
   return {
     template,
     players,
-    eventDetails: {
-      eventName: t('Nom du tournoi'),
-      subtitle: '',
-      date: '00/00/0000',
-      participantCount: '00',
-      tournamentLogo: '',
-      customBackground: '',
-      ...(isObject(projectData.eventDetails) ? projectData.eventDetails : {}),
-    },
+    eventDetails,
+    customFont,
+    customFontCss: customFonts
+      .filter((font) => font.id && font.source)
+      .map((font) =>
+        `@font-face { font-family: "${escapeCssString(getCustomFontFamily(font))}"; src: url("${font.source}"); font-display: swap; }`,
+      )
+      .join('\n'),
   }
 }
 
@@ -148,10 +197,18 @@ export default function AdminPanel({ currentUserId, onClose }) {
 
   const activeCount = users.filter(({ disabledAt }) => !disabledAt).length
   const projectCount = users.reduce((total, user) => total + user.projectCount, 0)
-  const selectedProjects = selectedUserProjects?.collection?.projects
-    ? Object.values(selectedUserProjects.collection.projects)
-    : []
-  const selectedProject = selectedProjects.find((project) => project.id === selectedProjectId) || null
+  const selectedProjects = useMemo(
+    () => selectedUserProjects?.collection?.projects
+      ? Object.values(selectedUserProjects.collection.projects)
+      : [],
+    [selectedUserProjects?.collection?.projects],
+  )
+  const selectedProject = useMemo(() => {
+    const project = selectedProjects.find((candidate) => candidate.id === selectedProjectId)
+    return project
+      ? { ...project, collection: selectedUserProjects?.collection }
+      : null
+  }, [selectedProjectId, selectedProjects, selectedUserProjects?.collection])
 
   useEffect(() => {
     let isActive = true
@@ -339,14 +396,18 @@ export default function AdminPanel({ currentUserId, onClose }) {
 
                 <div className="admin-project-canvas-frame" aria-busy={isHydratingPreview}>
                   {previewState ? (
-                    <Top8Canvas
-                      template={previewState.template}
-                      players={previewState.players}
-                      eventDetails={previewState.eventDetails}
-                      selectedLayer={{}}
-                      onPlayerChange={() => {}}
-                      onSelectLayer={() => {}}
-                    />
+                    <>
+                      {previewState.customFontCss && <style>{previewState.customFontCss}</style>}
+                      <Top8Canvas
+                        template={previewState.template}
+                        players={previewState.players}
+                        eventDetails={previewState.eventDetails}
+                        customFont={previewState.customFont}
+                        selectedLayer={{}}
+                        onPlayerChange={() => {}}
+                        onSelectLayer={() => {}}
+                      />
+                    </>
                   ) : (
                     <div className="admin-preview-placeholder" role="status">
                       {isHydratingPreview ? t('Préparation de l’aperçu…') : t('Aucun aperçu disponible.')}
