@@ -3,11 +3,15 @@ import { createServer } from 'node:http'
 import { extname, join, normalize, resolve } from 'node:path'
 import {
   clearSession,
+  createPasswordResetToken,
   createSession,
   createUser,
+  deleteExpiredPasswordResetTokens,
   deleteExpiredSessions,
   findUserByEmail,
   getAuthenticatedUser,
+  resetPasswordWithToken,
+  validatePassword,
   validateRegistration,
   verifyPassword,
 } from './auth.js'
@@ -26,6 +30,20 @@ const allowedOrigins = new Set(
     .map((origin) => origin.trim())
     .filter(Boolean),
 )
+
+const getApplicationOrigin = (request) => {
+  const configuredOrigin = String(process.env.PUBLIC_APP_URL || '').trim().replace(/\/+$/, '')
+  if (configuredOrigin) return configuredOrigin
+  const forwardedProtocol = String(request.headers['x-forwarded-proto'] || '').split(',')[0].trim()
+  const protocol = forwardedProtocol || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+  return `${protocol}://${request.headers.host || `localhost:${port}`}`
+}
+
+const buildPasswordResetUrl = (request, token) => {
+  const url = new URL('/reset-password', getApplicationOrigin(request))
+  url.searchParams.set('token', token)
+  return url.toString()
+}
 
 const mimeTypes = {
   '.css': 'text/css; charset=utf-8',
@@ -212,6 +230,46 @@ const handleApi = async (request, response, pathname) => {
         role: userRecord.role || 'user',
       },
     }, { 'Set-Cookie': session.cookie })
+    return
+  }
+
+  if (request.method === 'POST' && pathname === '/api/auth/password-reset/request') {
+    const { email } = await readJson(request)
+    const userRecord = findUserByEmail(email)
+    let resetLink = null
+    if (userRecord && !userRecord.disabled_at) {
+      const reset = createPasswordResetToken(userRecord.id)
+      resetLink = buildPasswordResetUrl(request, reset.token)
+      console.info(`Password reset link for ${userRecord.email}: ${resetLink}`)
+    }
+    sendJson(response, 200, {
+      ok: true,
+      message: 'Si un compte actif existe avec cet email, un lien de reset a ete prepare.',
+      ...(process.env.NODE_ENV === 'production' ? {} : { resetLink }),
+    })
+    return
+  }
+
+  if (request.method === 'POST' && pathname === '/api/auth/password-reset/confirm') {
+    const { token, password } = await readJson(request)
+    const passwordValidation = validatePassword(password)
+    if (passwordValidation.error) {
+      sendJson(response, 400, { error: passwordValidation.error })
+      return
+    }
+    if (!String(token || '').trim()) {
+      sendJson(response, 400, { error: 'Le lien de reset est invalide.' })
+      return
+    }
+    const passwordWasReset = await resetPasswordWithToken(
+      String(token).trim(),
+      passwordValidation.password,
+    )
+    if (!passwordWasReset) {
+      sendJson(response, 400, { error: 'Ce lien de reset est invalide ou expire.' })
+      return
+    }
+    sendJson(response, 200, { ok: true })
     return
   }
 
@@ -534,8 +592,13 @@ const serveStatic = (request, response, pathname) => {
   else createReadStream(filePath).pipe(response)
 }
 
-deleteExpiredSessions()
-const sessionCleanup = setInterval(deleteExpiredSessions, 60 * 60 * 1000)
+const cleanupAuthRecords = () => {
+  deleteExpiredSessions()
+  deleteExpiredPasswordResetTokens()
+}
+
+cleanupAuthRecords()
+const sessionCleanup = setInterval(cleanupAuthRecords, 60 * 60 * 1000)
 sessionCleanup.unref()
 
 const server = createServer(async (request, response) => {

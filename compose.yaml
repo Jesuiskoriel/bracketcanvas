@@ -10,6 +10,7 @@ services:
       NODE_ENV: production
       PORT: 3000
       DATABASE_PATH: /app/data/bracketcanvas.sqlite
+      PUBLIC_APP_URL: ${BRACKETCANVAS_PUBLIC_APP_URL:-https://bracketcanvas.jesuiskoriel.dev}
       ALLOWED_ORIGINS: ${BRACKETCANVAS_ORIGIN:-https://bracketcanvas.jesuiskoriel.dev}
       ADMIN_EMAILS: ${BRACKETCANVAS_ADMIN_EMAILS:-}
     expose:

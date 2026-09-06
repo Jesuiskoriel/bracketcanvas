@@ -31,6 +31,17 @@ export const loginAccount = (credentials) => request('/api/auth/login', {
 
 export const logoutAccount = () => request('/api/auth/logout', { method: 'POST' })
 
+export const requestPasswordReset = (email) => request('/api/auth/password-reset/request', {
+  method: 'POST',
+  body: JSON.stringify({ email }),
+})
+
+export const confirmPasswordReset = ({ token, password }) =>
+  request('/api/auth/password-reset/confirm', {
+    method: 'POST',
+    body: JSON.stringify({ token, password }),
+  })
+
 const workspaceQuery = (workspaceId) => workspaceId
   ? `?workspaceId=${encodeURIComponent(workspaceId)}`
   : ''
