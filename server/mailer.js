@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer'
+import { normalizeLanguage, translate } from '../shared/i18n.js'
 
 const getBooleanEnv = (name, fallback = false) => {
   const value = String(process.env[name] || '').trim().toLowerCase()
@@ -37,35 +38,42 @@ const escapeHtml = (value) => String(value)
 
 export const mailerIsConfigured = () => Boolean(String(process.env.SMTP_HOST || '').trim())
 
-export const sendPasswordResetEmail = async ({ to, resetLink }) => {
+export const buildPasswordResetEmail = ({ resetLink, language = 'fr' }) => {
+  const locale = normalizeLanguage(language)
+  const t = (key, values) => translate(locale, key, values)
+  const safeResetLink = escapeHtml(resetLink)
+  return {
+    subject: t('Réinitialisation de ton mot de passe BracketCanvas'),
+    text: [
+      t('Tu as demandé la réinitialisation de ton mot de passe BracketCanvas.'),
+      '',
+      t('Ouvre ce lien pour choisir un nouveau mot de passe : {0}', { 0: resetLink }),
+      '',
+      t('Le lien expire dans une heure. Si tu n’es pas à l’origine de cette demande, ignore cet e-mail.'),
+    ].join('\n'),
+    html: `
+      <div lang="${locale}" style="font-family:Arial,sans-serif;line-height:1.55;color:#111827">
+        <h1 style="font-size:20px;margin:0 0 16px">${t('Réinitialisation du mot de passe')}</h1>
+        <p>${t('Tu as demandé la réinitialisation de ton mot de passe BracketCanvas.')}</p>
+        <p>
+          <a href="${safeResetLink}" style="display:inline-block;padding:12px 16px;background:#111827;color:#ffffff;text-decoration:none;border-radius:6px">
+            ${t('Choisir un nouveau mot de passe')}
+          </a>
+        </p>
+        <p style="font-size:13px;color:#4b5563">${t('Ce lien expire dans une heure.')}</p>
+        <p style="font-size:13px;color:#4b5563">${t('Si tu n’es pas à l’origine de cette demande, ignore cet e-mail.')}</p>
+      </div>
+    `,
+  }
+}
+
+export const sendPasswordResetEmail = async ({ to, resetLink, language = 'fr' }) => {
   const transport = createTransport()
   if (!transport) return false
-  const safeResetLink = escapeHtml(resetLink)
-
   await transport.sendMail({
     from: getFromAddress(),
     to,
-    subject: 'Reset de ton mot de passe BracketCanvas',
-    text: [
-      'Tu as demande un reset de mot de passe BracketCanvas.',
-      '',
-      `Ouvre ce lien pour choisir un nouveau mot de passe : ${resetLink}`,
-      '',
-      'Le lien expire dans 1 heure. Si tu n es pas a l origine de cette demande, ignore cet email.',
-    ].join('\n'),
-    html: `
-      <div style="font-family:Arial,sans-serif;line-height:1.55;color:#111827">
-        <h1 style="font-size:20px;margin:0 0 16px">Reset de mot de passe</h1>
-        <p>Tu as demande un reset de mot de passe BracketCanvas.</p>
-        <p>
-          <a href="${safeResetLink}" style="display:inline-block;padding:12px 16px;background:#111827;color:#ffffff;text-decoration:none;border-radius:6px">
-            Choisir un nouveau mot de passe
-          </a>
-        </p>
-        <p style="font-size:13px;color:#4b5563">Ce lien expire dans 1 heure.</p>
-        <p style="font-size:13px;color:#4b5563">Si tu n es pas a l origine de cette demande, ignore cet email.</p>
-      </div>
-    `,
+    ...buildPasswordResetEmail({ resetLink, language }),
   })
   return true
 }

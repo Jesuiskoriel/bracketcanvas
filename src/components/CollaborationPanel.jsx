@@ -1,3 +1,4 @@
+import { msg, t, useLanguage } from '../i18n.js'
 import { useEffect, useState } from 'react'
 import {
   inviteWorkspaceMember,
@@ -15,6 +16,7 @@ export default function CollaborationPanel({
   onReloadRemote,
   onRefreshWorkspaces,
 }) {
+  useLanguage()
   const [isOpen, setIsOpen] = useState(false)
   const [email, setEmail] = useState('')
   const [members, setMembers] = useState([])
@@ -47,7 +49,7 @@ export default function CollaborationPanel({
         ? current
         : [...current, member])
       setEmail('')
-      setMessage(`${member.displayName} peut maintenant collaborer.`)
+      setMessage(msg("{0} peut maintenant collaborer.", { 0: member.displayName }))
       await onRefreshWorkspaces()
     } catch (error) {
       setMessage(error.message)
@@ -57,7 +59,7 @@ export default function CollaborationPanel({
   }
 
   const remove = async (member) => {
-    if (!window.confirm(`Retirer l’accès de ${member.displayName} ?`)) return
+    if (!window.confirm(t("Retirer l’accès de {0} ?", { 0: member.displayName }))) return
     setIsBusy(true)
     setMessage('')
     try {
@@ -75,18 +77,16 @@ export default function CollaborationPanel({
     <section className="collaboration-panel" aria-labelledby="collaboration-title">
       <div className="collaboration-summary">
         <div>
-          <p className="eyebrow">Espace partagé</p>
+          <p className="eyebrow">{t("Espace partagé")}</p>
           <h2 id="collaboration-title">
             {activeWorkspace?.owner.displayName || currentUser.displayName}
           </h2>
         </div>
-        <button type="button" disabled={disabled} onClick={() => setIsOpen(true)}>
-          Collaborer
-        </button>
+        <button type="button" disabled={disabled} onClick={() => setIsOpen(true)}>{t("Collaborer")}</button>
       </div>
       {workspaces.length > 1 && (
         <label className="workspace-select" htmlFor="workspace-select">
-          <span>Workspace actif</span>
+          <span>{t("Espace de travail actif")}</span>
           <select
             id="workspace-select"
             value={activeWorkspaceId}
@@ -95,7 +95,7 @@ export default function CollaborationPanel({
           >
             {workspaces.map((workspace) => (
               <option key={workspace.id} value={workspace.id}>
-                {workspace.role === 'owner' ? 'Mon workspace' : workspace.owner.displayName}
+                {workspace.role === 'owner' ? t("Mon espace de travail") : workspace.owner.displayName}
               </option>
             ))}
           </select>
@@ -103,8 +103,8 @@ export default function CollaborationPanel({
       )}
       {hasConflict && (
         <div className="collaboration-conflict" role="alert">
-          <span>Une version plus récente existe.</span>
-          <button type="button" onClick={onReloadRemote}>Charger la version distante</button>
+          <span>{t("Une version plus récente existe.")}</span>
+          <button type="button" onClick={onReloadRemote}>{t("Charger la version distante")}</button>
         </div>
       )}
 
@@ -119,49 +119,47 @@ export default function CollaborationPanel({
           >
             <header>
               <div>
-                <p className="eyebrow">Collaboration</p>
-                <h2 id="collaboration-dialog-title">Partager le workspace</h2>
+                <p className="eyebrow">{t("Collaboration")}</p>
+                <h2 id="collaboration-dialog-title">{t("Partager l’espace de travail")}</h2>
               </div>
-              <button className="modal-close" type="button" aria-label="Fermer" onClick={() => setIsOpen(false)}>×</button>
+              <button className="modal-close" type="button" aria-label={t("Fermer")} onClick={() => setIsOpen(false)}>×</button>
             </header>
             <div className="compact-modal-body">
-              <p className="collaboration-note">
-                Les collaborateurs accèdent à tous les projets de ce workspace. Les changements sont synchronisés automatiquement.
-              </p>
+              <p className="collaboration-note">{t("Les collaborateurs accèdent à tous les projets de cet espace de travail. Les changements sont synchronisés automatiquement.")}</p>
               {isOwner ? (
                 <form className="collaboration-invite" onSubmit={invite}>
-                  <label htmlFor="collaborator-email">E-mail d’un compte BracketCanvas</label>
+                  <label htmlFor="collaborator-email">{t("E-mail d’un compte BracketCanvas")}</label>
                   <div>
                     <input
                       id="collaborator-email"
                       type="email"
                       value={email}
-                      placeholder="joueur@exemple.fr"
+                      placeholder={t("joueur@exemple.fr")}
                       disabled={isBusy}
                       onChange={(event) => setEmail(event.target.value)}
                     />
-                    <button type="submit" disabled={isBusy || !email.trim()}>Inviter</button>
+                    <button type="submit" disabled={isBusy || !email.trim()}>{t("Inviter")}</button>
                   </div>
                 </form>
               ) : (
-                <p className="collaboration-note">Partagé par {activeWorkspace?.owner.email}.</p>
+                <p className="collaboration-note">{t("Partagé par ")}{activeWorkspace?.owner.email}.</p>
               )}
               <div className="collaborator-list">
-                <h3>Accès ({members.length + 1})</h3>
+                <h3>{t("Accès (")}{members.length + 1})</h3>
                 <div className="collaborator-row is-owner">
                   <span><strong>{activeWorkspace?.owner.displayName}</strong><small>{activeWorkspace?.owner.email}</small></span>
-                  <em>Propriétaire</em>
+                  <em>{t("Propriétaire")}</em>
                 </div>
                 {members.map((member) => (
                   <div className="collaborator-row" key={member.id}>
                     <span><strong>{member.displayName}</strong><small>{member.email}</small></span>
                     {isOwner ? (
-                      <button type="button" disabled={isBusy} onClick={() => remove(member)}>Retirer</button>
-                    ) : <em>Éditeur</em>}
+                      <button type="button" disabled={isBusy} onClick={() => remove(member)}>{t("Retirer")}</button>
+                    ) : <em>{t("Éditeur")}</em>}
                   </div>
                 ))}
               </div>
-              {message && <p className="collaboration-message" role="status">{message}</p>}
+              {message && <p className="collaboration-message" role="status">{t(message)}</p>}
             </div>
           </section>
         </div>

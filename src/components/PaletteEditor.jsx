@@ -1,3 +1,4 @@
+import { t, useLanguage } from '../i18n.js'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   PALETTE_KEYS,
@@ -17,8 +18,8 @@ const HARMONIES = [
 ]
 
 const PRESETS = [
-  ['original', 'Original'], ['dark', 'Dark'], ['light', 'Light'],
-  ['monochrome', 'Monochrome'], ['high-contrast', 'High Contrast'],
+  ['original', 'Original'], ['dark', "Sombre"], ['light', "Clair"],
+  ['monochrome', 'Monochrome'], ['high-contrast', "Contraste élevé"],
 ]
 
 function PaletteIcon() {
@@ -32,6 +33,7 @@ function LockIcon({ locked }) {
 const DEFAULT_TRANSFORMS = { hue: 0, saturation: 100, lightness: 0, contrast: 100 }
 
 export default function PaletteEditor({ template, onClose, onChange }) {
+  useLanguage()
   const [basePalette, setBasePalette] = useState(template.palette)
   const [transforms, setTransforms] = useState(DEFAULT_TRANSFORMS)
   const [sourceColor, setSourceColor] = useState(template.palette.primary)
@@ -92,51 +94,51 @@ export default function PaletteEditor({ template, onClose, onChange }) {
         <header>
           <div className="palette-editor-title-row">
             <span className="palette-editor-icon"><PaletteIcon /></span>
-            <div><p className="eyebrow">Direction artistique</p><h2 id="palette-editor-title" ref={headingRef} tabIndex="-1">Palette globale</h2></div>
+            <div><p className="eyebrow">{t("Direction artistique")}</p><h2 id="palette-editor-title" ref={headingRef} tabIndex="-1">{t("Palette globale")}</h2></div>
           </div>
-          <button className="palette-close" type="button" aria-label="Fermer l’éditeur de palette" onClick={onClose}>×</button>
+          <button className="palette-close" type="button" aria-label={t("Fermer l’éditeur de palette")} onClick={onClose}>×</button>
         </header>
 
         <div className="palette-editor-scroll">
           <section aria-labelledby="palette-tokens-title">
-            <div className="palette-section-heading"><h3 id="palette-tokens-title">Couleurs du template</h3><small>Modifications en temps réel</small></div>
+            <div className="palette-section-heading"><h3 id="palette-tokens-title">{t("Couleurs du modèle")}</h3><small>{t("Modifications en temps réel")}</small></div>
             <div className="palette-token-list">
               {PALETTE_KEYS.map((key) => (
                 <div className="palette-token" key={key}>
-                  <label htmlFor={`palette-${key}`}><input id={`palette-${key}`} type="color" value={palette[key]} onChange={(event) => commit({ ...palette, [key]: normalizeHex(event.target.value) })} /><span>{PALETTE_LABELS[key]}</span><code>{palette[key]}</code></label>
-                  <button type="button" className={locks.includes(key) ? 'is-locked' : ''} aria-label={`${locks.includes(key) ? 'Déverrouiller' : 'Verrouiller'} ${PALETTE_LABELS[key]}`} aria-pressed={locks.includes(key)} onClick={() => toggleLock(key)}><LockIcon locked={locks.includes(key)} /></button>
+                  <label htmlFor={`palette-${key}`}><input id={`palette-${key}`} type="color" value={palette[key]} onChange={(event) => commit({ ...palette, [key]: normalizeHex(event.target.value) })} /><span>{t(PALETTE_LABELS[key])}</span><code>{palette[key]}</code></label>
+                  <button type="button" className={locks.includes(key) ? 'is-locked' : ''} aria-label={`${locks.includes(key) ? t("Déverrouiller") : t("Verrouiller")} ${t(PALETTE_LABELS[key])}`} aria-pressed={locks.includes(key)} onClick={() => toggleLock(key)}><LockIcon locked={locks.includes(key)} /></button>
                 </div>
               ))}
             </div>
-            {warnings.length > 0 && <p className="palette-warning" role="status">Contraste faible : {warnings.join(', ')}. Le choix manuel reste appliqué.</p>}
+            {warnings.length > 0 && <p className="palette-warning" role="status">{t('Contraste faible : {0}. Le choix manuel reste appliqué.', { 0: warnings.map((warning) => t(warning)).join(', ') })}</p>}
           </section>
 
           <section aria-labelledby="palette-harmony-title">
-            <div className="palette-section-heading"><h3 id="palette-harmony-title">Générer depuis une couleur</h3></div>
-            <div className="palette-source-row"><label htmlFor="palette-source">Couleur principale<input id="palette-source" type="color" value={sourceColor} onChange={(event) => setSourceColor(event.target.value)} /></label><select aria-label="Type d’harmonie" value={harmony} onChange={(event) => setHarmony(event.target.value)}>{HARMONIES.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></div>
-            <button className="palette-wide-action" type="button" onClick={generateFromColor}>Créer une palette à partir de cette couleur</button>
+            <div className="palette-section-heading"><h3 id="palette-harmony-title">{t("Générer depuis une couleur")}</h3></div>
+            <div className="palette-source-row"><label htmlFor="palette-source">{t("Couleur principale")}<input id="palette-source" type="color" value={sourceColor} onChange={(event) => setSourceColor(event.target.value)} /></label><select aria-label={t("Type d’harmonie")} value={harmony} onChange={(event) => setHarmony(event.target.value)}>{HARMONIES.map(([id, label]) => <option key={id} value={id}>{t(label)}</option>)}</select></div>
+            <button className="palette-wide-action" type="button" onClick={generateFromColor}>{t("Créer une palette à partir de cette couleur")}</button>
           </section>
 
           <section aria-labelledby="palette-adjustments-title">
-            <div className="palette-section-heading"><h3 id="palette-adjustments-title">Réglages globaux</h3><button type="button" onClick={() => { setBasePalette(palette); setTransforms(DEFAULT_TRANSFORMS) }}>Définir comme base</button></div>
+            <div className="palette-section-heading"><h3 id="palette-adjustments-title">{t("Réglages globaux")}</h3><button type="button" onClick={() => { setBasePalette(palette); setTransforms(DEFAULT_TRANSFORMS) }}>{t("Définir comme base")}</button></div>
             {[
-              ['hue', 'Teinte globale', -180, 180, '°'],
-              ['saturation', 'Saturation', 0, 200, '%'],
-              ['lightness', 'Luminosité', -35, 35, ''],
-              ['contrast', 'Contraste', 50, 160, '%'],
-            ].map(([key, label, min, max, suffix]) => <label className="palette-slider" htmlFor={`palette-${key}`} key={key}><span>{label}<output htmlFor={`palette-${key}`}>{transforms[key]}{suffix}</output></span><input id={`palette-${key}`} type="range" min={min} max={max} value={transforms[key]} onChange={(event) => changeTransform(key, Number(event.target.value))} /></label>)}
+              ['hue', t("Teinte globale"), -180, 180, '°'],
+              ['saturation', t("Saturation"), 0, 200, '%'],
+              ['lightness', t("Luminosité"), -35, 35, ''],
+              ['contrast', t("Contraste"), 50, 160, '%'],
+            ].map(([key, label, min, max, suffix]) => <label className="palette-slider" htmlFor={`palette-${key}`} key={key}><span>{t(label)}<output htmlFor={`palette-${key}`}>{transforms[key]}{suffix}</output></span><input id={`palette-${key}`} type="range" min={min} max={max} value={transforms[key]} onChange={(event) => changeTransform(key, Number(event.target.value))} /></label>)}
           </section>
 
           <section aria-labelledby="palette-presets-title">
-            <div className="palette-section-heading"><h3 id="palette-presets-title">Presets</h3></div>
-            <div className="palette-preset-grid">{PRESETS.map(([id, label]) => <button key={id} type="button" onClick={() => applyPreset(id)}>{label}</button>)}</div>
+            <div className="palette-section-heading"><h3 id="palette-presets-title">{t("Préréglages")}</h3></div>
+            <div className="palette-preset-grid">{PRESETS.map(([id, label]) => <button key={id} type="button" onClick={() => applyPreset(id)}>{t(label)}</button>)}</div>
           </section>
         </div>
 
         <footer>
-          <button type="button" onClick={() => commit(createRandomPalette({ current: palette, familyHue: template.familyHue, mood: template.generationBrief?.colors?.mood || 'dark', locks }))}>Nouvelle palette</button>
-          <button type="button" onClick={() => commit(template.originalPalette, locks)}>Réinitialiser</button>
-          <button type="button" className="palette-done" onClick={onClose}>Terminé</button>
+          <button type="button" onClick={() => commit(createRandomPalette({ current: palette, familyHue: template.familyHue, mood: template.generationBrief?.colors?.mood || 'dark', locks }))}>{t("Nouvelle palette")}</button>
+          <button type="button" onClick={() => commit(template.originalPalette, locks)}>{t("Réinitialiser")}</button>
+          <button type="button" className="palette-done" onClick={onClose}>{t("Terminé")}</button>
         </footer>
       </aside>
     </div>

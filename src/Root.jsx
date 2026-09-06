@@ -1,8 +1,10 @@
+import { msg, t, useLanguage } from './i18n.js'
 import { lazy, Suspense, useEffect, useState } from 'react'
 import App from './App.jsx'
 import AuthScreen from './components/AuthScreen.jsx'
 import BetaWelcomeModal from './components/BetaWelcomeModal.jsx'
 import ThemeToggle from './components/ThemeToggle.jsx'
+import LanguageSelect from './components/LanguageSelect.jsx'
 import {
   getSession,
   loginAccount,
@@ -19,6 +21,7 @@ const TemplateDiversityBoard = import.meta.env.DEV
   : null
 
 function BracketCanvasRoot() {
+  useLanguage()
   const [theme, setTheme] = useState(() => {
     try {
       return localStorage.getItem('bracketcanvas:theme') === 'light' ? 'light' : 'dark'
@@ -54,7 +57,7 @@ function BracketCanvasRoot() {
         if (isActive) setUser(sessionUser)
       })
       .catch(() => {
-        if (isActive) setSessionError('Impossible de joindre le serveur BracketCanvas.')
+        if (isActive) setSessionError(msg("Impossible de joindre le serveur BracketCanvas."))
       })
       .finally(() => {
         if (isActive) setIsLoading(false)
@@ -93,14 +96,14 @@ function BracketCanvasRoot() {
     content = (
       <main className="session-loading" aria-live="polite">
         <div className="session-loading-mark">BC</div>
-        <p>Ouverture de ton espace…</p>
+        <p>{t("Ouverture de ton espace…")}</p>
       </main>
     )
   } else if (!user) {
     content = (
       <>
         <AuthScreen onLogin={login} onRegister={register} />
-        {sessionError && <p className="session-error" role="alert">{sessionError}</p>}
+        {sessionError && <p className="session-error" role="alert">{t(sessionError)}</p>}
       </>
     )
   } else {
@@ -109,7 +112,10 @@ function BracketCanvasRoot() {
 
   return (
     <>
-      <ThemeToggle theme={theme} onChange={setTheme} />
+      <div className="app-preferences">
+        <LanguageSelect />
+        <ThemeToggle theme={theme} onChange={setTheme} />
+      </div>
       {content}
       {showBetaWelcome && <BetaWelcomeModal onClose={closeBetaWelcome} />}
     </>
@@ -117,9 +123,10 @@ function BracketCanvasRoot() {
 }
 
 export default function Root() {
+  useLanguage()
   if (showTemplateContactSheet && TemplateDiversityBoard) {
     return (
-      <Suspense fallback={<main className="session-loading"><p>Préparation de la planche…</p></main>}>
+      <Suspense fallback={<main className="session-loading"><p>{t("Préparation de la planche…")}</p></main>}>
         <TemplateDiversityBoard />
       </Suspense>
     )

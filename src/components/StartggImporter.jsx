@@ -1,3 +1,4 @@
+import { msg, t, useLanguage } from '../i18n.js'
 import { useEffect, useRef, useState } from 'react'
 import { mapStartggCharacter } from '../data/startggCharacterMapping.js'
 import { fetchStartggTop8 } from '../services/startgg.js'
@@ -14,6 +15,7 @@ const enrichPreview = (preview, availableCharacterIds) => ({
 })
 
 function StartggImporter({ availableCharacterIds, onConfirm }) {
+  useLanguage()
   const [eventUrl, setEventUrl] = useState('')
   const [token, setToken] = useState('')
   const [preview, setPreview] = useState(null)
@@ -52,7 +54,7 @@ function StartggImporter({ availableCharacterIds, onConfirm }) {
       setPreview(enrichPreview(result, availableCharacterIds))
     } catch (requestError) {
       if (requestError.name !== 'AbortError') {
-        setError(requestError.message || "L’import Start.gg a échoué.")
+        setError(requestError.message || msg("L’import Start.gg a échoué."))
       }
     } finally {
       if (abortRef.current === controller) {
@@ -70,7 +72,7 @@ function StartggImporter({ availableCharacterIds, onConfirm }) {
       await onConfirm(preview)
       setPreview(null)
     } catch (importError) {
-      setError(importError.message || "Le Top 8 n’a pas pu être appliqué.")
+      setError(importError.message || msg("Le Top 8 n’a pas pu être appliqué."))
     } finally {
       setIsApplying(false)
     }
@@ -79,13 +81,13 @@ function StartggImporter({ availableCharacterIds, onConfirm }) {
   return (
     <section className="startgg-importer" aria-labelledby="startgg-title">
       <div className="section-heading">
-        <p className="eyebrow">Import</p>
+        <p className="eyebrow">{t("Import")}</p>
         <h2 id="startgg-title">Start.gg</h2>
       </div>
 
       <form className="startgg-form" onSubmit={loadPreview}>
         <label className="text-control compact-control" htmlFor="startgg-event-url">
-          <span>URL de l’event</span>
+          <span>{t("URL de l’événement")}</span>
           <input
             id="startgg-event-url"
             type="url"
@@ -97,31 +99,28 @@ function StartggImporter({ availableCharacterIds, onConfirm }) {
         </label>
 
         <label className="text-control compact-control" htmlFor="startgg-token">
-          <span>Jeton API Start.gg</span>
+          <span>{t("Jeton API Start.gg")}</span>
           <input
             id="startgg-token"
             type="password"
             autoComplete="off"
-            placeholder="Jeton personnel"
+            placeholder={t("Jeton personnel")}
             value={token}
             onChange={(event) => setToken(event.target.value)}
           />
         </label>
 
-        <p className="startgg-privacy-note">
-          Le jeton reste uniquement dans cette page et n’est pas sauvegardé.{' '}
+        <p className="startgg-privacy-note">{t("Le jeton reste uniquement dans cette page et n’est pas sauvegardé.")}{' '}
           <a
             href="https://developer.start.gg/docs/authentication/"
             target="_blank"
             rel="noreferrer"
-          >
-            Créer un jeton
-          </a>
+          >{t("Créer un jeton")}</a>
         </p>
         <button className="startgg-load-button" type="submit" disabled={isLoading}>
-          {isLoading ? 'Analyse de l’event…' : 'Prévisualiser le Top 8'}
+          {isLoading ? t("Analyse de l’événement…") : t("Prévisualiser le Top 8")}
         </button>
-        {error && !preview && <p className="startgg-error" role="alert">{error}</p>}
+        {error && !preview && <p className="startgg-error" role="alert">{t(error)}</p>}
       </form>
 
       {preview && (
@@ -134,12 +133,12 @@ function StartggImporter({ availableCharacterIds, onConfirm }) {
           >
             <header className="startgg-dialog-header">
               <div>
-                <p className="eyebrow">Vérification avant import</p>
+                <p className="eyebrow">{t("Vérification avant import")}</p>
                 <h2 id="startgg-preview-title">{preview.eventName}</h2>
               </div>
               <div className="startgg-event-facts">
                 {preview.date && <span>{preview.date}</span>}
-                <span>{preview.participantCount || '—'} participants</span>
+                <span>{preview.participantCount || '—'}{t(" participants")}</span>
               </div>
             </header>
 
@@ -155,17 +154,15 @@ function StartggImporter({ availableCharacterIds, onConfirm }) {
                           <span
                             key={character.name}
                             className={character.localId ? '' : 'is-unmapped'}
-                            title={character.localId ? `${character.games} game(s)` : 'Absent de la bibliothèque de personnages'}
+                            title={character.localId ? t(character.games === 1 ? '{0} partie' : '{0} parties', { 0: character.games }) : t("Absent de la bibliothèque de personnages")}
                           >
                             {character.name}
-                            {!character.localId && ' (non reconnu)'}
+                            {!character.localId && t(' (non reconnu)')}
                           </span>
                         ))}
                       </span>
                     ) : (
-                      <span className="startgg-characters is-empty">
-                        Personnages non renseignés
-                      </span>
+                      <span className="startgg-characters is-empty">{t("Personnages non renseignés")}</span>
                     )}
                   </div>
                 </li>
@@ -173,20 +170,18 @@ function StartggImporter({ availableCharacterIds, onConfirm }) {
             </ol>
 
             {preview.characterNote && (
-              <p className="startgg-character-note">{preview.characterNote} Le classement peut quand même être importé.</p>
+              <p className="startgg-character-note">{t(preview.characterNote)}{t(" Le classement peut quand même être importé.")}</p>
             )}
-            {error && <p className="startgg-error" role="alert">{error}</p>}
+            {error && <p className="startgg-error" role="alert">{t(error)}</p>}
 
             <footer className="startgg-dialog-actions">
               <button
                 type="button"
                 disabled={isApplying}
                 onClick={() => setPreview(null)}
-              >
-                Annuler
-              </button>
+              >{t("Annuler")}</button>
               <button type="button" disabled={isApplying} onClick={confirmImport}>
-                {isApplying ? 'Import en cours…' : 'Importer ce Top 8'}
+                {isApplying ? t("Import en cours…") : t("Importer ce Top 8")}
               </button>
             </footer>
           </section>

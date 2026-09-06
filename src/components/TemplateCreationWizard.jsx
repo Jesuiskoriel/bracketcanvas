@@ -1,3 +1,4 @@
+import { t, msg, useLanguage } from '../i18n.js'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   createDefaultGenerationBrief,
@@ -43,7 +44,7 @@ const COLOR_MODES = [
 ]
 
 const PANEL_SHAPES = [
-  ['auto', 'Choisir pour moi', 'La forme suit le layout et la direction artistique.'],
+  ['auto', 'Choisir pour moi', "La forme suit la composition et la direction artistique."],
   ['irregular', 'Irrégulières', 'Des angles variés et une énergie plus organique.'],
   ['diagonal', 'Diagonales', 'Des cases inclinées, rapides et très esport.'],
   ['cut-corners', 'Coins coupés', 'Un rendu graphique net, façon interface futuriste.'],
@@ -145,9 +146,9 @@ function DiceIcon() {
 
 const SliderField = ({ id, label, low, high, value, onChange }) => (
   <label className="wizard-slider" htmlFor={id}>
-    <span><strong>{label}</strong><output htmlFor={id}>{Math.round(value)}%</output></span>
+    <span><strong>{t(label)}</strong><output htmlFor={id}>{Math.round(value)}%</output></span>
     <input id={id} type="range" min="0" max="100" value={value} onChange={(event) => onChange(Number(event.target.value))} />
-    <small><span>{low}</span><span>{high}</span></small>
+    <small><span>{t(low)}</span><span>{t(high)}</span></small>
   </label>
 )
 
@@ -160,12 +161,13 @@ const ChoiceCard = ({ selected, color, title, description, onClick, className = 
   >
     {icon && <span className="wizard-choice-icon">{icon}</span>}
     {color && <span className="wizard-choice-swatch" style={{ background: color }} />}
-    <span><strong>{title}</strong>{description && <small>{description}</small>}</span>
+    <span><strong>{t(title)}</strong>{description && <small>{t(description)}</small>}</span>
     <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 10.5l3 3 7-7" /></svg>
   </button>
 )
 
 export default function TemplateCreationWizard({ projectName, onBack, onCancel, onSubmit, required = false }) {
+  useLanguage()
   const [brief, setBrief] = useState(() => createDefaultGenerationBrief(projectName))
   const [stepIndex, setStepIndex] = useState(0)
   const [error, setError] = useState('')
@@ -235,7 +237,7 @@ export default function TemplateCreationWizard({ projectName, onBack, onCancel, 
     } catch {
       return {
         template: null,
-        error: "Cette proposition n'a pas pu être construite. Essaie une autre variation.",
+        error: t("Cette proposition n'a pas pu être construite. Essaie une autre variation."),
       }
     }
   }, [brief, previewSeed])
@@ -267,11 +269,11 @@ export default function TemplateCreationWizard({ projectName, onBack, onCancel, 
         })
         const proposedTemplate = proposal?.template || proposal
         const resolvedSeed = proposal?.seed || proposedTemplate?.seed
-        if (!resolvedSeed) throw new Error('Seed de proposition manquante.')
+        if (!resolvedSeed) throw new Error(t("Seed de proposition manquante."))
         setPreviewSeed(resolvedSeed)
       } catch {
         setPreviewActionError(
-          "Impossible de trouver une nouvelle proposition pour le moment. Réessaie.",
+          msg("Impossible de trouver une nouvelle proposition pour le moment. Réessaie."),
         )
       } finally {
         setIsShuffling(false)
@@ -300,7 +302,7 @@ export default function TemplateCreationWizard({ projectName, onBack, onCancel, 
 
   const goNext = () => {
     if (step.id === 'identity' && !brief.tournament.name.trim()) {
-      setError('Le nom du tournoi est obligatoire.')
+      setError(msg("Le nom du tournoi est obligatoire."))
       return
     }
     setError('')
@@ -320,12 +322,12 @@ export default function TemplateCreationWizard({ projectName, onBack, onCancel, 
   return (
     <>
       <header className="wizard-header">
-        <p className="eyebrow">Assistant de création</p>
-        <h2 id="project-dialog-title" ref={headingRef} tabIndex="-1">{step.label}</h2>
-        <div className="wizard-progress" aria-label={`Étape ${stepIndex + 1} sur ${STEPS.length}`}>
+        <p className="eyebrow">{t("Assistant de création")}</p>
+        <h2 id="project-dialog-title" ref={headingRef} tabIndex="-1">{t(step.label)}</h2>
+        <div className="wizard-progress" aria-label={t("Étape {0} sur {1}", { 0: stepIndex + 1, 1: STEPS.length })}>
           {STEPS.map((item, index) => (
             <span key={item.id} className={index === stepIndex ? 'is-current' : index < stepIndex ? 'is-complete' : ''}>
-              <i>{index + 1}</i><small>{item.label}</small>
+              <i>{index + 1}</i><small>{t(item.label)}</small>
             </span>
           ))}
         </div>
@@ -336,26 +338,22 @@ export default function TemplateCreationWizard({ projectName, onBack, onCancel, 
           <div className="wizard-controls">
         {step.id === 'identity' && (
           <div className="wizard-form-grid">
-            <label className="text-control wizard-field wizard-field-wide" htmlFor="wizard-tournament-name">
-              Nom du tournoi <span aria-hidden="true">*</span>
+            <label className="text-control wizard-field wizard-field-wide" htmlFor="wizard-tournament-name">{t("Nom du tournoi ")}<span aria-hidden="true">*</span>
               <input id="wizard-tournament-name" value={brief.tournament.name} autoComplete="organization" onChange={(event) => { patchSection('tournament', { name: event.target.value }); setError('') }} />
             </label>
-            <label className="text-control wizard-field wizard-field-wide" htmlFor="wizard-subtitle">
-              Sous-titre / édition <small>Optionnel</small>
-              <input id="wizard-subtitle" value={brief.tournament.subtitle} placeholder="Weekly #34" onChange={(event) => patchSection('tournament', { subtitle: event.target.value })} />
+            <label className="text-control wizard-field wizard-field-wide" htmlFor="wizard-subtitle">{t("Sous-titre / édition ")}<small>{t("Optionnel")}</small>
+              <input id="wizard-subtitle" value={brief.tournament.subtitle} placeholder={t("Weekly #34")} onChange={(event) => patchSection('tournament', { subtitle: event.target.value })} />
             </label>
-            <label className="text-control wizard-field" htmlFor="wizard-date">
-              Date <small>Optionnel</small>
+            <label className="text-control wizard-field" htmlFor="wizard-date">{t("Date ")}<small>{t("Optionnel")}</small>
               <input id="wizard-date" type="date" value={brief.tournament.date} onChange={(event) => patchSection('tournament', { date: event.target.value })} />
             </label>
-            <label className="text-control wizard-field" htmlFor="wizard-entrants">
-              Participants <small>Optionnel</small>
+            <label className="text-control wizard-field" htmlFor="wizard-entrants">{t("Participants ")}<small>{t("Optionnel")}</small>
               <input id="wizard-entrants" type="number" min="0" inputMode="numeric" value={brief.tournament.entrants} onChange={(event) => patchSection('tournament', { entrants: event.target.value })} />
             </label>
             <fieldset className="wizard-fieldset wizard-field-wide">
-              <legend>Type d’événement</legend>
+              <legend>{t("Type d’événement")}</legend>
               <div className="wizard-chip-list">
-                {EVENT_TYPES.map(([id, label]) => <button type="button" key={id} className={brief.tournament.eventType === id ? 'is-selected' : ''} aria-pressed={brief.tournament.eventType === id} onClick={() => patchSection('tournament', { eventType: id })}>{label}</button>)}
+                {EVENT_TYPES.map(([id, label]) => <button type="button" key={id} className={brief.tournament.eventType === id ? 'is-selected' : ''} aria-pressed={brief.tournament.eventType === id} onClick={() => patchSection('tournament', { eventType: id })}>{t(label)}</button>)}
               </div>
             </fieldset>
           </div>
@@ -363,20 +361,20 @@ export default function TemplateCreationWizard({ projectName, onBack, onCancel, 
 
         {step.id === 'direction' && (
           <>
-            <p className="wizard-question">Jusqu'où le générateur peut-il aller ?</p>
+            <p className="wizard-question">{t("Jusqu'où le générateur peut-il aller ?")}</p>
             <div className="wizard-surprise-row">
               <ChoiceCard
                 className="wizard-surprise-choice"
                 selected={generationMode === 'surprise'}
-                title="Surprends-moi"
-                description="BracketCanvas choisit librement la direction, le layout, les formes, la palette et le traitement graphique."
+                title={t("Surprends-moi")}
+                description={t("BracketCanvas choisit librement la direction artistique, la composition, les formes, la palette et le traitement graphique.")}
                 icon={<DiceIcon />}
                 onClick={() => patchSection('generation', { mode: 'surprise' })}
               />
             </div>
 
             <fieldset className="wizard-fieldset wizard-variation-fieldset">
-              <legend>Niveau de variation</legend>
+              <legend>{t("Niveau de variation")}</legend>
               <div className="wizard-choice-grid wizard-variation-grid">
                 {variationOptions.map((variation) => (
                   <ChoiceCard
@@ -391,8 +389,8 @@ export default function TemplateCreationWizard({ projectName, onBack, onCancel, 
             </fieldset>
 
             <div className="wizard-guided-heading">
-              <span>Ou guide la direction artistique</span>
-              {generationMode === 'guided' && <small>Mode guidé actif</small>}
+              <span>{t("Ou guide la direction artistique")}</span>
+              {generationMode === 'guided' && <small>{t("Mode guidé actif")}</small>}
             </div>
             <div className="wizard-choice-grid wizard-family-grid">
               {guidedFamilies.map((family) => (
@@ -406,19 +404,19 @@ export default function TemplateCreationWizard({ projectName, onBack, onCancel, 
                 />
               ))}
             </div>
-            <SliderField id="wizard-intensity" label={`Intensité — ${generatedIntensityLabels[intensityIndex]}`} low="Sobre" high="Très marqué" value={brief.artDirection.intensity} onChange={(intensity) => patchSection('artDirection', { intensity })} />
+            <SliderField id="wizard-intensity" label={t("Intensité — {0}", { 0: t(generatedIntensityLabels[intensityIndex]) })} low={t("Sobre")} high={t("Très marqué")} value={brief.artDirection.intensity} onChange={(intensity) => patchSection('artDirection', { intensity })} />
           </>
         )}
 
         {step.id === 'composition' && (
           <>
-            <p className="wizard-question">Quel type de composition ?</p>
+            <p className="wizard-question">{t("Quel type de composition ?")}</p>
             {autoLayout && (
               <div className="wizard-layout-auto">
                 <ChoiceCard
                   selected={brief.composition.layoutFamily === autoLayout.id}
                   title={autoLayout.label}
-                  description={autoLayout.description || 'Choisir une structure cohérente avec le reste du brief.'}
+                  description={autoLayout.description || t("Choisir une structure cohérente avec le reste du brief.")}
                   onClick={() => patchSection('composition', { layoutFamily: autoLayout.id })}
                 />
               </div>
@@ -426,7 +424,7 @@ export default function TemplateCreationWizard({ projectName, onBack, onCancel, 
             <div className="wizard-layout-groups">
               {layoutGroups.map((group) => (
                 <fieldset className="wizard-fieldset wizard-layout-group" key={group.id}>
-                  <legend>{formatGroupLabel(group.id)}</legend>
+                  <legend>{t(formatGroupLabel(group.id))}</legend>
                   <div className="wizard-choice-grid wizard-layout-grid">
                     {group.layouts.map((layout) => (
                       <ChoiceCard
@@ -442,100 +440,100 @@ export default function TemplateCreationWizard({ projectName, onBack, onCancel, 
               ))}
             </div>
             <div className="wizard-slider-grid">
-              <SliderField id="wizard-dominance" label="Importance du Top 1" low="Discret" high="Dominant" value={brief.composition.winnerDominance} onChange={(winnerDominance) => patchSection('composition', { winnerDominance })} />
-              <SliderField id="wizard-density" label="Densité du layout" low="Aéré" high="Compact" value={brief.composition.density} onChange={(density) => patchSection('composition', { density })} />
-              <SliderField id="wizard-symmetry" label="Symétrie" low="Très asymétrique" high="Très structuré" value={brief.composition.symmetry} onChange={(symmetry) => patchSection('composition', { symmetry })} />
+              <SliderField id="wizard-dominance" label={t("Importance du Top 1")} low={t("Discret")} high={t("Dominant")} value={brief.composition.winnerDominance} onChange={(winnerDominance) => patchSection('composition', { winnerDominance })} />
+              <SliderField id="wizard-density" label={t("Densité de la composition")} low={t("Aéré")} high={t("Compact")} value={brief.composition.density} onChange={(density) => patchSection('composition', { density })} />
+              <SliderField id="wizard-symmetry" label={t("Symétrie")} low={t("Très asymétrique")} high={t("Très structuré")} value={brief.composition.symmetry} onChange={(symmetry) => patchSection('composition', { symmetry })} />
             </div>
           </>
         )}
 
         {step.id === 'panels' && (
           <>
-            <p className="wizard-question">Donne une vraie personnalité aux huit cases.</p>
+            <p className="wizard-question">{t("Donne une vraie personnalité aux huit cases.")}</p>
             <fieldset className="wizard-fieldset wizard-fieldset-first">
-              <legend>Forme des cases</legend>
+              <legend>{t("Forme des cases")}</legend>
               <div className="wizard-choice-grid wizard-option-grid">
                 {PANEL_SHAPES.map(([id, title, description]) => <ChoiceCard key={id} selected={brief.panels.shapeStyle === id} title={title} description={description} onClick={() => patchSection('panels', { shapeStyle: id })} />)}
               </div>
             </fieldset>
             <div className="wizard-two-column-options">
               <fieldset className="wizard-fieldset">
-                <legend>Style des cadres</legend>
-                <div className="wizard-chip-list">{FRAME_STYLES.map(([id, label]) => <button type="button" key={id} className={brief.panels.frameStyle === id ? 'is-selected' : ''} aria-pressed={brief.panels.frameStyle === id} onClick={() => patchSection('panels', { frameStyle: id })}>{label}</button>)}</div>
+                <legend>{t("Style des cadres")}</legend>
+                <div className="wizard-chip-list">{FRAME_STYLES.map(([id, label]) => <button type="button" key={id} className={brief.panels.frameStyle === id ? 'is-selected' : ''} aria-pressed={brief.panels.frameStyle === id} onClick={() => patchSection('panels', { frameStyle: id })}>{t(label)}</button>)}</div>
               </fieldset>
               <fieldset className="wizard-fieldset">
-                <legend>Position des pseudos</legend>
-                <div className="wizard-chip-list">{LABEL_POSITIONS.map(([id, label]) => <button type="button" key={id} className={brief.panels.labelPosition === id ? 'is-selected' : ''} aria-pressed={brief.panels.labelPosition === id} onClick={() => patchSection('panels', { labelPosition: id })}>{label}</button>)}</div>
+                <legend>{t("Position des pseudos")}</legend>
+                <div className="wizard-chip-list">{LABEL_POSITIONS.map(([id, label]) => <button type="button" key={id} className={brief.panels.labelPosition === id ? 'is-selected' : ''} aria-pressed={brief.panels.labelPosition === id} onClick={() => patchSection('panels', { labelPosition: id })}>{t(label)}</button>)}</div>
               </fieldset>
             </div>
             <fieldset className="wizard-fieldset">
-              <legend>Texture intérieure</legend>
-              <div className="wizard-chip-list">{TEXTURES.map(([id, label]) => <button type="button" key={id} className={brief.panels.texture === id ? 'is-selected' : ''} aria-pressed={brief.panels.texture === id} onClick={() => patchSection('panels', { texture: id })}>{label}</button>)}</div>
+              <legend>{t("Texture intérieure")}</legend>
+              <div className="wizard-chip-list">{TEXTURES.map(([id, label]) => <button type="button" key={id} className={brief.panels.texture === id ? 'is-selected' : ''} aria-pressed={brief.panels.texture === id} onClick={() => patchSection('panels', { texture: id })}>{t(label)}</button>)}</div>
             </fieldset>
             <div className="wizard-slider-grid wizard-slider-grid-two">
-              <SliderField id="wizard-label-width" label="Largeur des pseudos" low="Courte" high="Pleine largeur" value={brief.panels.labelWidth} onChange={(labelWidth) => patchSection('panels', { labelWidth })} />
-              <SliderField id="wizard-texture-scale" label="Échelle du motif" low="Fine" high="Large" value={brief.panels.textureScale} onChange={(textureScale) => patchSection('panels', { textureScale })} />
+              <SliderField id="wizard-label-width" label={t("Largeur des pseudos")} low={t("Courte")} high={t("Pleine largeur")} value={brief.panels.labelWidth} onChange={(labelWidth) => patchSection('panels', { labelWidth })} />
+              <SliderField id="wizard-texture-scale" label={t("Échelle du motif")} low={t("Fine")} high={t("Large")} value={brief.panels.textureScale} onChange={(textureScale) => patchSection('panels', { textureScale })} />
             </div>
           </>
         )}
 
         {step.id === 'typography' && (
           <>
-            <p className="wizard-question">Comment le tournoi doit-il prendre la parole ?</p>
+            <p className="wizard-question">{t("Comment le tournoi doit-il prendre la parole ?")}</p>
             <div className="wizard-choice-grid wizard-typography-grid">
               {TYPOGRAPHIES.map(([id, title, description]) => <ChoiceCard key={id} selected={brief.typography.family === id} title={title} description={description} onClick={() => patchSection('typography', { family: id })} />)}
             </div>
             <div className="wizard-two-column-options">
               <fieldset className="wizard-fieldset">
-                <legend>Style des placements</legend>
-                <div className="wizard-chip-list">{RANK_STYLES.map(([id, label]) => <button type="button" key={id} className={brief.typography.rankStyle === id ? 'is-selected' : ''} aria-pressed={brief.typography.rankStyle === id} onClick={() => patchSection('typography', { rankStyle: id })}>{label}</button>)}</div>
+                <legend>{t("Style des placements")}</legend>
+                <div className="wizard-chip-list">{RANK_STYLES.map(([id, label]) => <button type="button" key={id} className={brief.typography.rankStyle === id ? 'is-selected' : ''} aria-pressed={brief.typography.rankStyle === id} onClick={() => patchSection('typography', { rankStyle: id })}>{t(label)}</button>)}</div>
               </fieldset>
               <fieldset className="wizard-fieldset">
-                <legend>Construction du bandeau</legend>
-                <div className="wizard-chip-list">{HEADER_STYLES.map(([id, label]) => <button type="button" key={id} className={brief.typography.headerStyle === id ? 'is-selected' : ''} aria-pressed={brief.typography.headerStyle === id} onClick={() => patchSection('typography', { headerStyle: id })}>{label}</button>)}</div>
+                <legend>{t("Construction du bandeau")}</legend>
+                <div className="wizard-chip-list">{HEADER_STYLES.map(([id, label]) => <button type="button" key={id} className={brief.typography.headerStyle === id ? 'is-selected' : ''} aria-pressed={brief.typography.headerStyle === id} onClick={() => patchSection('typography', { headerStyle: id })}>{t(label)}</button>)}</div>
               </fieldset>
             </div>
-            <SliderField id="wizard-background-energy" label="Énergie du fond" low="Très calme" high="Très présent" value={brief.typography.backgroundEnergy} onChange={(backgroundEnergy) => patchSection('typography', { backgroundEnergy })} />
+            <SliderField id="wizard-background-energy" label={t("Énergie du fond")} low={t("Très calme")} high={t("Très présent")} value={brief.typography.backgroundEnergy} onChange={(backgroundEnergy) => patchSection('typography', { backgroundEnergy })} />
           </>
         )}
 
         {step.id === 'colors' && (
           <>
-            <p className="wizard-question">Quelle palette veux-tu ?</p>
+            <p className="wizard-question">{t("Quelle palette veux-tu ?")}</p>
             <div className="wizard-choice-grid wizard-color-modes">
               {COLOR_MODES.map(([id, title, description]) => <ChoiceCard key={id} selected={brief.colors.mode === id} title={title} description={description} onClick={() => patchSection('colors', { mode: id })} />)}
             </div>
             {brief.colors.mode !== 'auto' && (
               <div className="wizard-color-fields">
-                <label>Principale <input type="color" value={brief.colors.primary} onChange={(event) => patchSection('colors', { primary: event.target.value })} /></label>
+                <label>{t("Principale ")}<input type="color" value={brief.colors.primary} onChange={(event) => patchSection('colors', { primary: event.target.value })} /></label>
                 {brief.colors.mode === 'custom' && <>
-                  <label>Secondaire <input type="color" value={brief.colors.secondary} onChange={(event) => patchSection('colors', { secondary: event.target.value })} /></label>
-                  <label>Accent <input type="color" value={brief.colors.accent} onChange={(event) => patchSection('colors', { accent: event.target.value })} /></label>
-                  <label>Fond <input type="color" value={brief.colors.background} onChange={(event) => patchSection('colors', { background: event.target.value })} /></label>
+                  <label>{t("Secondaire ")}<input type="color" value={brief.colors.secondary} onChange={(event) => patchSection('colors', { secondary: event.target.value })} /></label>
+                  <label>{t("Accent ")}<input type="color" value={brief.colors.accent} onChange={(event) => patchSection('colors', { accent: event.target.value })} /></label>
+                  <label>{t("Fond ")}<input type="color" value={brief.colors.background} onChange={(event) => patchSection('colors', { background: event.target.value })} /></label>
                 </>}
               </div>
             )}
             <fieldset className="wizard-fieldset">
-              <legend>Ambiance couleur</legend>
-              <div className="wizard-chip-list">{COLOR_MOODS.map(([id, label]) => <button type="button" key={id} className={brief.colors.mood === id ? 'is-selected' : ''} aria-pressed={brief.colors.mood === id} onClick={() => patchSection('colors', { mood: id })}>{label}</button>)}</div>
+              <legend>{t("Ambiance couleur")}</legend>
+              <div className="wizard-chip-list">{COLOR_MOODS.map(([id, label]) => <button type="button" key={id} className={brief.colors.mood === id ? 'is-selected' : ''} aria-pressed={brief.colors.mood === id} onClick={() => patchSection('colors', { mood: id })}>{t(label)}</button>)}</div>
             </fieldset>
-            <div className="wizard-palette-preview" aria-label="Aperçu de la palette">{palettePreview.map((color, index) => <span key={`${color}-${index}`} style={{ background: color }} title={color} />)}</div>
+            <div className="wizard-palette-preview" aria-label={t("Aperçu de la palette")}>{palettePreview.map((color, index) => <span key={`${color}-${index}`} style={{ background: color }} title={color} />)}</div>
           </>
         )}
 
         {step.id === 'summary' && (
           <div className="wizard-summary">
-            <div><span>Nom</span><strong>{brief.tournament.name}</strong><small>{brief.tournament.subtitle || 'Sans sous-titre'}</small></div>
-            <div><span>Direction artistique</span><strong>{generationMode === 'surprise' ? 'Surprends-moi' : selectedFamily?.label}</strong><small>{generatedIntensityLabels[intensityIndex]}</small></div>
-            <div><span>Variation</span><strong>{selectedVariation?.label || variationId}</strong><small>{selectedVariation?.description}</small></div>
-            <div><span>Composition</span><strong>{selectedLayout?.label}</strong><small>Top 1 à {brief.composition.winnerDominance}% · densité {brief.composition.density}%</small></div>
-            <div><span>Cases</span><strong>{selectedShape?.[1] || 'Choisir pour moi'}</strong><small>{FRAME_STYLES.find(([id]) => id === brief.panels.frameStyle)?.[1] || 'Cadre automatique'} · pseudos {(LABEL_POSITIONS.find(([id]) => id === brief.panels.labelPosition)?.[1] || 'automatiques').toLowerCase()}</small></div>
-            <div><span>Typographie</span><strong>{selectedTypography?.[1] || 'Adaptée à l’univers'}</strong><small>Placements {(RANK_STYLES.find(([id]) => id === brief.typography.rankStyle)?.[1] || 'automatiques').toLowerCase()} · bandeau {(HEADER_STYLES.find(([id]) => id === brief.typography.headerStyle)?.[1] || 'automatique').toLowerCase()}</small></div>
-            <div><span>Palette</span><strong>{COLOR_MODES.find(([id]) => id === brief.colors.mode)?.[1]}</strong><div className="wizard-palette-preview">{palettePreview.map((color, index) => <span key={`${color}-${index}`} style={{ background: color }} />)}</div></div>
+            <div><span>{t("Nom")}</span><strong>{brief.tournament.name}</strong><small>{brief.tournament.subtitle || t("Sans sous-titre")}</small></div>
+            <div><span>{t("Direction artistique")}</span><strong>{generationMode === 'surprise' ? t("Surprends-moi") : t(selectedFamily?.label)}</strong><small>{t(generatedIntensityLabels[intensityIndex])}</small></div>
+            <div><span>{t("Variation")}</span><strong>{t(selectedVariation?.label) || variationId}</strong><small>{t(selectedVariation?.description)}</small></div>
+            <div><span>{t("Composition")}</span><strong>{t(selectedLayout?.label)}</strong><small>{t("Top 1 à ")}{brief.composition.winnerDominance}{t("% · densité ")}{brief.composition.density}%</small></div>
+            <div><span>{t("Cases")}</span><strong>{t(selectedShape?.[1] || 'Choisir pour moi')}</strong><small>{t(FRAME_STYLES.find(([id]) => id === brief.panels.frameStyle)?.[1] || 'Cadre automatique')}{t(" · pseudos ")}{t(LABEL_POSITIONS.find(([id]) => id === brief.panels.labelPosition)?.[1] || 'automatiques').toLowerCase()}</small></div>
+            <div><span>{t("Typographie")}</span><strong>{t(selectedTypography?.[1] || 'Adaptée à l’univers')}</strong><small>{t("Placements ")}{t(RANK_STYLES.find(([id]) => id === brief.typography.rankStyle)?.[1] || 'automatiques').toLowerCase()}{t(" · bandeau ")}{t(HEADER_STYLES.find(([id]) => id === brief.typography.headerStyle)?.[1] || 'automatique').toLowerCase()}</small></div>
+            <div><span>{t("Palette")}</span><strong>{t(COLOR_MODES.find(([id]) => id === brief.colors.mode)?.[1])}</strong><div className="wizard-palette-preview">{palettePreview.map((color, index) => <span key={`${color}-${index}`} style={{ background: color }} />)}</div></div>
           </div>
         )}
 
-        {error && <p className="project-dialog-error" role="alert">{error}</p>}
+        {error && <p className="project-dialog-error" role="alert">{t(error)}</p>}
           </div>
           <TemplateLivePreview
             template={previewTemplate}
@@ -548,11 +546,11 @@ export default function TemplateCreationWizard({ projectName, onBack, onCancel, 
       </div>
 
       <div className="project-dialog-actions wizard-actions">
-        <button type="button" onClick={goBack}>Retour</button>
-        {!required && <button type="button" onClick={onCancel}>Annuler</button>}
+        <button type="button" onClick={goBack}>{t("Retour")}</button>
+        {!required && <button type="button" onClick={onCancel}>{t("Annuler")}</button>}
         {step.id === 'summary'
-          ? <button type="button" className="wizard-generate-button" disabled={!previewTemplate || isShuffling} onClick={() => onSubmit(brief, previewTemplate.seed)}>Générer mon template</button>
-          : <button type="button" onClick={goNext}>Continuer</button>}
+          ? <button type="button" className="wizard-generate-button" disabled={!previewTemplate || isShuffling} onClick={() => onSubmit(brief, previewTemplate.seed)}>{t("Générer mon modèle")}</button>
+          : <button type="button" onClick={goNext}>{t("Continuer")}</button>}
       </div>
     </>
   )

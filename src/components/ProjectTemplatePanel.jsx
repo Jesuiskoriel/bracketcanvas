@@ -1,3 +1,4 @@
+import { t, useLanguage } from '../i18n.js'
 function DiceIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -21,27 +22,24 @@ function PaletteIcon() {
 }
 
 export default function ProjectTemplatePanel({ template, disabled, onRegenerate, onEditPalette }) {
+  useLanguage()
   return (
     <section className="project-template-panel" aria-labelledby="project-template-title">
       <div>
-        <p className="eyebrow">Template</p>
-        <h2 id="project-template-title">{template.name}</h2>
+        <p className="eyebrow">{t("Modèle")}</p>
+        <h2 id="project-template-title">{t(template.name)}</h2>
         <p>
           {template.generated
-            ? `${template.familyName} · ${template.layoutName}`
-            : 'Template Zero original'}
+            ? `${t(template.familyName)} · ${t(template.layoutName)}`
+            : t("Modèle Zero original")}
         </p>
       </div>
       <div className="project-template-actions">
         <button type="button" disabled={disabled} onClick={onEditPalette}>
-          <PaletteIcon />
-          Palette
-        </button>
+          <PaletteIcon />{t("Palette")}</button>
         {template.generated && (
           <button type="button" disabled={disabled} onClick={onRegenerate}>
-            <DiceIcon />
-            Nouvelle variante
-          </button>
+            <DiceIcon />{t("Nouvelle variante")}</button>
         )}
       </div>
     </section>

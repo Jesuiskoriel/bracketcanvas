@@ -1,3 +1,4 @@
+import { t, useLanguage, getLocale } from '../i18n.js'
 import { useMemo } from 'react'
 import Top8Canvas from './Top8Canvas.jsx'
 
@@ -10,10 +11,10 @@ function ShuffleIcon() {
 }
 
 const formatPreviewDate = (date) => {
-  if (!date) return 'DATE À VENIR'
+  if (!date) return t("DATE À VENIR")
   const parsedDate = new Date(`${date}T12:00:00`)
   if (Number.isNaN(parsedDate.getTime())) return date
-  return new Intl.DateTimeFormat('fr-FR', {
+  return new Intl.DateTimeFormat(getLocale(), {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -27,26 +28,30 @@ export default function TemplateLivePreview({
   error = '',
   isBusy = false,
 }) {
-  const players = useMemo(() => (template?.slots || []).map((slot, index) => ({
-    id: slot.id,
-    placement: slot.placement,
-    playerName: `PLAYER ${index + 1}`,
-    character: '', renderId: '', render: '',
-    secondaryCharacter: '', secondaryRenderId: '', secondaryRender: '',
-    teamLogo: '', teamLogoName: '',
-    rankX: slot.rank.x,
-    rankY: slot.rank.y,
-    rankSize: slot.rank.size,
-    rankColor: slot.rank.color,
-    rankLayer: slot.rank.layer,
-    x: 0, y: 0, scale: 1, flipped: false, opacity: 100,
-    secondaryX: 18, secondaryY: 0, secondaryScale: 1,
-    secondaryFlipped: false, secondaryOpacity: 100,
-  })), [template])
+  const language = useLanguage()
+  const players = useMemo(() => {
+    void language
+    return (template?.slots || []).map((slot, index) => ({
+      id: slot.id,
+      placement: slot.placement,
+      playerName: t('JOUEUR {0}', { 0: index + 1 }),
+      character: '', renderId: '', render: '',
+      secondaryCharacter: '', secondaryRenderId: '', secondaryRender: '',
+      teamLogo: '', teamLogoName: '',
+      rankX: slot.rank.x,
+      rankY: slot.rank.y,
+      rankSize: slot.rank.size,
+      rankColor: slot.rank.color,
+      rankLayer: slot.rank.layer,
+      x: 0, y: 0, scale: 1, flipped: false, opacity: 100,
+      secondaryX: 18, secondaryY: 0, secondaryScale: 1,
+      secondaryFlipped: false, secondaryOpacity: 100,
+    }))
+  }, [template, language])
 
   const eventDetails = {
-    eventName: brief.tournament.name || 'NOM DU TOURNOI',
-    subtitle: brief.tournament.subtitle || 'ÉDITION / SOUS-TITRE',
+    eventName: brief.tournament.name || t("NOM DU TOURNOI"),
+    subtitle: brief.tournament.subtitle || t("ÉDITION / SOUS-TITRE"),
     date: formatPreviewDate(brief.tournament.date),
     participantCount: brief.tournament.entrants || '0',
     tournamentLogo: '',
@@ -56,9 +61,9 @@ export default function TemplateLivePreview({
     <aside className="wizard-preview-panel" aria-labelledby="wizard-preview-title">
       <div className="wizard-preview-heading">
         <div>
-          <p className="eyebrow">Preview live</p>
-          <h3 id="wizard-preview-title">{template?.name || 'Aperçu indisponible'}</h3>
-          {template && <small>{template.familyName} · {template.layoutName}</small>}
+          <p className="eyebrow">{t("Aperçu en direct")}</p>
+          <h3 id="wizard-preview-title">{template?.name || t("Aperçu indisponible")}</h3>
+          {template && <small>{t(template.familyName)} · {t(template.layoutName)}</small>}
         </div>
         <button
           type="button"
@@ -68,7 +73,7 @@ export default function TemplateLivePreview({
           onClick={onShuffle}
         >
           <ShuffleIcon />
-          {isBusy ? 'Recherche…' : 'Autre proposition'}
+          {isBusy ? t("Recherche…") : t("Autre proposition")}
         </button>
       </div>
       <div className="wizard-preview-frame">
@@ -85,20 +90,20 @@ export default function TemplateLivePreview({
           </div>
         ) : (
           <div className="wizard-preview-error" role="alert">
-            <strong>La preview n'a pas pu être générée.</strong>
-            <span>{error || 'Essaie une autre proposition.'}</span>
+            <strong>{t("L’aperçu n’a pas pu être généré.")}</strong>
+            <span>{t(error || t("Essaie une autre proposition."))}</span>
           </div>
         )}
       </div>
-      {error && template && <p className="wizard-preview-inline-error" role="alert">{error}</p>}
+      {error && template && <p className="wizard-preview-inline-error" role="alert">{t(error)}</p>}
       <p className="visually-hidden" role="status" aria-live="polite" aria-atomic="true">
         {isBusy
-          ? 'Recherche d’une nouvelle proposition.'
+          ? t("Recherche d’une nouvelle proposition.")
           : template
-            ? `Proposition ${template.name}, direction ${template.familyName}, composition ${template.layoutName}.`
-            : 'Aucune proposition disponible.'}
+            ? t('Proposition {0}, direction {1}, composition {2}.', { 0: template.name, 1: t(template.familyName), 2: t(template.layoutName) })
+            : t("Aucune proposition disponible.")}
       </p>
-      <p className="wizard-preview-note">Aperçu 686 × 386 · Aucun render SSBU n’est chargé.</p>
+      <p className="wizard-preview-note">{t("Aperçu 686 × 386 · Aucun visuel SSBU n’est chargé.")}</p>
     </aside>
   )
 }

@@ -47,3 +47,42 @@ h1 { font-size: 1.45rem; line-height: 1.1; letter-spacing: -.035em; }
 h2 { font-size: 1rem; line-height: 1.2; letter-spacing: -.02em; }
 p { line-height: 1.55; }
 ::selection { color: var(--portfolio-purple); background: var(--portfolio-cream); }
+
+.app-preferences {
+  position: fixed;
+  top: 12px;
+  right: 16px;
+  z-index: 1080;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100% - 24px);
+}
+.app-preferences .theme-toggle { position: static; }
+.language-select {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 4px 8px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: .75rem;
+  letter-spacing: 0;
+}
+.language-select select {
+  width: 98px;
+  min-height: 32px;
+  color: var(--text);
+  background: var(--input);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px;
+}
+.language-select select:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+@media (max-width: 600px) {
+  .app-preferences { top: 8px; right: 12px; }
+  .language-select > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+}

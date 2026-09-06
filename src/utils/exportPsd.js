@@ -1,3 +1,4 @@
+import { t } from '../i18n.js'
 import { toCanvas } from 'html-to-image'
 import { createExportFilename, downloadBlob } from './exportPng.js'
 
@@ -121,8 +122,8 @@ export const exportTop8AsPsd = async ({
   template,
   players,
 }) => {
-  if (!canvasNode) throw new Error('Le canvas est introuvable.')
-  if (![1, 2, 4].includes(scale)) throw new Error("La qualité d'export PSD est invalide.")
+  if (!canvasNode) throw new Error(t("Le canvas est introuvable."))
+  if (![1, 2, 4].includes(scale)) throw new Error(t("La qualité d'export PSD est invalide."))
 
   await document.fonts.load('16px "Hylia Serif"')
   await document.fonts.ready
@@ -198,8 +199,8 @@ export const exportTop8AsPsd = async ({
     })
 
     const metadataLabels = {
-      eventName: 'Event Name', subtitle: 'Subtitle', date: 'Date',
-      participantCount: 'Entrants',
+      eventName: t('Nom de l’événement'), subtitle: t('Sous-titre / édition'), date: t("Date"),
+      participantCount: t('Nombre de participants'),
     }
     const tournamentChildren = []
     for (const field of template.metadata) {
@@ -209,15 +210,15 @@ export const exportTop8AsPsd = async ({
       ))
     }
     if (exportNode.querySelector('[data-psd-key="tournament-logo"]')) {
-      tournamentChildren.push(await makeLayer('Tournament Logo', 'tournament-logo'))
+      tournamentChildren.push(await makeLayer(t('Logo du tournoi'), 'tournament-logo'))
     }
 
     const foregroundKeys = template.layers
       .filter((layer) => layer.zIndex >= 20)
       .map((layer) => `template-layer-${layer.id}`)
     const foregroundChildren = [
-      await makeLayer('Foreground Decorations', template.decorations.map(({ id }) => `decoration-${id}`)),
-      await makeLayer('Slot Frames', foregroundKeys),
+      await makeLayer(t('Décorations de premier plan'), template.decorations.map(({ id }) => `decoration-${id}`)),
+      await makeLayer(t('Cadres des cases'), foregroundKeys),
     ].filter(Boolean)
 
     const playerGroups = []
@@ -227,13 +228,13 @@ export const exportTop8AsPsd = async ({
       if (!player) continue
       const prefix = `player-${player.id}`
       const children = []
-      if (player.rankLayer === 'front') children.push(await makeLayer('Placement', `${prefix}-placement`))
-      children.push(await makeLayer('Pseudo', `${prefix}-pseudo`))
-      if (player.teamLogo) children.push(await makeLayer('Team Logo', `${prefix}-team-logo`))
-      children.push(await makeLayer('Slot Shading', `${prefix}-shade`))
+      if (player.rankLayer === 'front') children.push(await makeLayer(t('Placement'), `${prefix}-placement`))
+      children.push(await makeLayer(t("Pseudo"), `${prefix}-pseudo`))
+      if (player.teamLogo) children.push(await makeLayer(t('Logo d’équipe'), `${prefix}-team-logo`))
+      children.push(await makeLayer(t('Ombre de la case'), `${prefix}-shade`))
 
       if (player.render) {
-        const character = await makeLayer('Character 1', `${prefix}-character-1`, {
+        const character = await makeLayer(t('Personnage 1'), `${prefix}-character-1`, {
           unclipPlayer: player.id,
           normalizeOpacity: true,
         })
@@ -244,7 +245,7 @@ export const exportTop8AsPsd = async ({
         children.push(character)
       }
       if (player.secondaryRender) {
-        const character = await makeLayer('Character 2', `${prefix}-character-2`, {
+        const character = await makeLayer(t('Personnage 2'), `${prefix}-character-2`, {
           unclipPlayer: player.id,
           normalizeOpacity: true,
         })
@@ -254,10 +255,13 @@ export const exportTop8AsPsd = async ({
         }
         children.push(character)
       }
-      if (player.rankLayer === 'back') children.push(await makeLayer('Placement', `${prefix}-placement`))
+      if (player.rankLayer === 'back') children.push(await makeLayer(t('Placement'), `${prefix}-placement`))
 
       playerGroups.push({
-        name: `Player ${template.slots.findIndex(({ id }) => id === slot.id) + 1} — Place ${player.placement}`,
+        name: t('Joueur {0} — Place {1}', {
+          0: template.slots.findIndex(({ id }) => id === slot.id) + 1,
+          1: player.placement,
+        }),
         opened: false,
         children: children.filter(Boolean),
       })
@@ -267,8 +271,8 @@ export const exportTop8AsPsd = async ({
       .filter((layer) => layer.zIndex < 20)
       .map((layer) => `template-layer-${layer.id}`)
     const backgroundChildren = [
-      await makeLayer('Slot Textures', template.slots.map(({ id }) => `slot-texture-${id}`)),
-      await makeLayer('Background', backgroundKeys),
+      await makeLayer(t('Textures des cases'), template.slots.map(({ id }) => `slot-texture-${id}`)),
+      await makeLayer(t('Arrière-plan'), backgroundKeys),
     ].filter(Boolean)
 
     const psd = {
@@ -286,10 +290,10 @@ export const exportTop8AsPsd = async ({
         },
       },
       children: [
-        { name: 'Tournament', opened: true, children: tournamentChildren.filter(Boolean) },
-        { name: 'Template — Foreground', opened: true, children: foregroundChildren },
-        { name: 'Players', opened: true, children: playerGroups },
-        { name: 'Template — Background', opened: true, children: backgroundChildren },
+        { name: t('Tournoi'), opened: true, children: tournamentChildren.filter(Boolean) },
+        { name: t('Modèle — Premier plan'), opened: true, children: foregroundChildren },
+        { name: t('Joueurs'), opened: true, children: playerGroups },
+        { name: t('Modèle — Arrière-plan'), opened: true, children: backgroundChildren },
       ],
     }
 
@@ -301,7 +305,7 @@ export const exportTop8AsPsd = async ({
     )
   } catch (error) {
     if (scale === 4) {
-      throw new Error('La création du PSD x4 a manqué de mémoire. Réessaie en x2.', { cause: error })
+      throw new Error(t("La création du PSD x4 a manqué de mémoire. Réessaie en x2."), { cause: error })
     }
     throw error
   } finally {

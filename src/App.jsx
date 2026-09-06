@@ -1,3 +1,4 @@
+import { t, msg, useLanguage } from './i18n.js'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import PlayerEditor from './components/PlayerEditor.jsx'
 import AdminPanel from './components/AdminPanel.jsx'
@@ -98,15 +99,15 @@ const remapPlayersToTemplate = (currentPlayers, template) =>
     return { ...remappedPlayer, ...constrainRankPosition(remappedPlayer, slot) }
   })
 
-const INITIAL_EVENT_DETAILS = {
-  eventName: 'Nom du tournoi',
+const createInitialEventDetails = () => ({
+  eventName: t('Nom du tournoi'),
   subtitle: '',
   date: '00/00/0000',
   participantCount: '00',
   eventType: 'weekly',
   tournamentLogo: '',
   tournamentLogoName: '',
-}
+})
 
 const INITIAL_SELECTED_LAYER = {
   playerId: zeroTemplate.slots[0].id,
@@ -220,7 +221,7 @@ const restoreProjectState = async (savedProject = {}) => {
       project.templateRevision !== template.revision,
   )
   const eventDetails = {
-    ...INITIAL_EVENT_DETAILS,
+    ...createInitialEventDetails(),
     ...(isObject(project.eventDetails) ? project.eventDetails : {}),
     tournamentLogo: restorePersistentImage(
       project.eventDetails?.tournamentLogo,
@@ -248,8 +249,8 @@ const restoreProjectState = async (savedProject = {}) => {
 
 const getSaveErrorMessage = (error) =>
   isStorageQuotaError(error)
-    ? "Sauvegarde impossible : les logos dépassent l’espace disponible."
-    : 'La sauvegarde a échoué.'
+    ? msg("Sauvegarde impossible : les logos dépassent l’espace disponible.")
+    : msg("La sauvegarde a échoué.")
 
 const cloneProjectData = (data) => {
   if (globalThis.structuredClone) return structuredClone(data)
@@ -257,7 +258,7 @@ const cloneProjectData = (data) => {
 }
 
 const getAvailableCopyName = (name, projects) => {
-  const baseName = `${name} — Copie`
+  const baseName = t('{0} - Copie', { 0: name })
   const existingNames = new Set(projects.map((project) => project.name))
   if (!existingNames.has(baseName)) return baseName
 
@@ -267,6 +268,7 @@ const getAvailableCopyName = (name, projects) => {
 }
 
 function App({ currentUser, onLogout }) {
+  useLanguage()
   const canvasRef = useRef(null)
   const saveTimeoutRef = useRef(null)
   const projectCollectionRef = useRef(null)
@@ -282,8 +284,8 @@ function App({ currentUser, onLogout }) {
   const [exportError, setExportError] = useState('')
   const [isRestoring, setIsRestoring] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
-  const [saveStatus, setSaveStatus] = useState('Chargement de la sauvegarde…')
-  const [eventDetails, setEventDetails] = useState(INITIAL_EVENT_DETAILS)
+  const [saveStatus, setSaveStatus] = useState(() => msg("Chargement de la sauvegarde…"))
+  const [eventDetails, setEventDetails] = useState(() => createInitialEventDetails())
   const [autoPlacementTarget, setAutoPlacementTarget] = useState('')
   const [projectCollection, setProjectCollection] = useState(null)
   const [requiresProjectCreation, setRequiresProjectCreation] = useState(false)
@@ -324,7 +326,7 @@ function App({ currentUser, onLogout }) {
   const syncCollectionToCloud = useCallback((collection) => {
     const generation = cloudSaveGenerationRef.current + 1
     cloudSaveGenerationRef.current = generation
-    setSaveStatus('Sauvegarde cloud…')
+    setSaveStatus(msg("Sauvegarde cloud…"))
 
     cloudSaveQueueRef.current = cloudSaveQueueRef.current
       .catch(() => undefined)
@@ -336,7 +338,7 @@ function App({ currentUser, onLogout }) {
         cloudRevisionRef.current = result.revision
         setHasCloudConflict(false)
         if (cloudSaveGenerationRef.current === generation) {
-          setSaveStatus('Sauvegardé sur le cloud')
+          setSaveStatus(msg("Sauvegardé sur le cloud"))
         }
       })
       .catch((error) => {
@@ -344,8 +346,8 @@ function App({ currentUser, onLogout }) {
         if (error.status === 409) setHasCloudConflict(true)
         if (cloudSaveGenerationRef.current === generation) {
           setSaveStatus(error.status === 409
-            ? 'Conflit détecté — charge la version distante avant de continuer'
-            : 'Cloud indisponible — modifications conservées sur cet appareil')
+            ? msg("Conflit détecté — charge la version distante avant de continuer")
+            : msg("Cloud indisponible — modifications conservées sur cet appareil"))
         }
       })
 
@@ -387,12 +389,12 @@ function App({ currentUser, onLogout }) {
           collection = createProjectCollection(
             createPersistableProject({
               players: createInitialPlayers(),
-              eventDetails: { ...INITIAL_EVENT_DETAILS },
+              eventDetails: createInitialEventDetails(),
               selectedLayer: INITIAL_SELECTED_LAYER,
               exportScale: 4,
               template: zeroTemplate,
             }),
-            INITIAL_EVENT_DETAILS.eventName,
+            createInitialEventDetails().eventName,
           )
         }
         collection = storeCollection(collection, false)
@@ -404,14 +406,14 @@ function App({ currentUser, onLogout }) {
         setRequiresProjectCreation(isNewWorkspace)
         setSaveStatus(
           isNewWorkspace
-            ? 'Crée ton premier projet'
+            ? msg("Crée ton premier projet")
             : cloudIsAvailable
-            ? 'Sauvegardé sur le cloud'
-            : 'Cloud indisponible — modifications conservées sur cet appareil',
+            ? msg("Sauvegardé sur le cloud")
+            : msg("Cloud indisponible — modifications conservées sur cet appareil"),
         )
       } catch (error) {
         console.error(error)
-        if (isActive) setSaveStatus("Impossible de restaurer la sauvegarde.")
+        if (isActive) setSaveStatus(msg("Impossible de restaurer la sauvegarde."))
       } finally {
         if (isActive) setIsRestoring(false)
       }
@@ -430,7 +432,7 @@ function App({ currentUser, onLogout }) {
       saveTimeoutRef.current = null
     }
     setIsSaving(true)
-    setSaveStatus('Sauvegarde…')
+    setSaveStatus(msg("Sauvegarde…"))
 
     try {
       const nextCollection = updateActiveProjectData(
@@ -459,7 +461,7 @@ function App({ currentUser, onLogout }) {
       saveTimeoutRef.current = null
     }
     setIsRestoring(true)
-    setSaveStatus('Synchronisation du workspace…')
+    setSaveStatus(msg("Synchronisation de l’espace de travail…"))
     try {
       const remote = await loadCloudProjectCollection(activeWorkspaceId)
       if (!remote.collection) return
@@ -474,10 +476,10 @@ function App({ currentUser, onLogout }) {
       skipNextAutoSaveRef.current = true
       applyRestoredState(await restoreProjectState(activeProject?.data))
       setHasCloudConflict(false)
-      setSaveStatus('Synchronisé avec les collaborateurs')
+      setSaveStatus(msg("Synchronisé avec les collaborateurs"))
     } catch (error) {
       console.error(error)
-      setSaveStatus('Impossible de charger la version distante.')
+      setSaveStatus(msg("Impossible de charger la version distante."))
     } finally {
       setIsRestoring(false)
     }
@@ -487,7 +489,7 @@ function App({ currentUser, onLogout }) {
     if (!workspaceId || workspaceId === activeWorkspaceId || isRestoring) return
     if (!requiresProjectCreation) persistCurrentProject()
     setIsRestoring(true)
-    setSaveStatus('Changement de workspace…')
+    setSaveStatus(msg("Changement d’espace de travail…"))
     await cloudSaveQueueRef.current.catch(() => undefined)
     cloudRevisionRef.current = 0
     cloudSaveGenerationRef.current += 1
@@ -506,7 +508,7 @@ function App({ currentUser, onLogout }) {
       skipNextAutoSaveRef.current = false
       return undefined
     }
-    setSaveStatus('Sauvegarde…')
+    setSaveStatus(msg("Sauvegarde…"))
     saveTimeoutRef.current = window.setTimeout(persistCurrentProject, 600)
     return () => {
       if (saveTimeoutRef.current) window.clearTimeout(saveTimeoutRef.current)
@@ -791,7 +793,7 @@ function App({ currentUser, onLogout }) {
       )
     } catch (error) {
       console.error(error)
-      setSaveStatus("Le logo de team n'a pas pu être importé.")
+      setSaveStatus(msg("Le logo d’équipe n’a pas pu être importé."))
     }
   }
 
@@ -804,7 +806,7 @@ function App({ currentUser, onLogout }) {
       })
     } catch (error) {
       console.error(error)
-      setSaveStatus("Le logo du tournoi n'a pas pu être importé.")
+      setSaveStatus(msg("Le logo du tournoi n'a pas pu être importé."))
     }
   }
 
@@ -882,7 +884,7 @@ function App({ currentUser, onLogout }) {
       saveTimeoutRef.current = null
     }
     setIsRestoring(true)
-    setSaveStatus('Chargement du projet…')
+    setSaveStatus(msg("Chargement du projet…"))
 
     try {
       const nextCollection = { ...collection, activeProjectId: projectId }
@@ -893,7 +895,7 @@ function App({ currentUser, onLogout }) {
       setSaveStatus(
         isStorageQuotaError(error)
           ? getSaveErrorMessage(error)
-          : "Impossible de charger ce projet.",
+          : msg("Impossible de charger ce projet."),
       )
     } finally {
       setIsRestoring(false)
@@ -927,14 +929,14 @@ function App({ currentUser, onLogout }) {
     const tournament = generationBrief?.tournament
     const initialEventDetails = template.generated
       ? {
-          ...INITIAL_EVENT_DETAILS,
-          eventName: tournament?.name || INITIAL_EVENT_DETAILS.eventName,
+          ...createInitialEventDetails(),
+          eventName: tournament?.name || createInitialEventDetails().eventName,
           subtitle: tournament?.subtitle || '',
-          date: tournament?.date || INITIAL_EVENT_DETAILS.date,
-          participantCount: tournament?.entrants || INITIAL_EVENT_DETAILS.participantCount,
-          eventType: tournament?.eventType || INITIAL_EVENT_DETAILS.eventType,
+          date: tournament?.date || createInitialEventDetails().date,
+          participantCount: tournament?.entrants || createInitialEventDetails().participantCount,
+          eventType: tournament?.eventType || createInitialEventDetails().eventType,
         }
-      : { ...INITIAL_EVENT_DETAILS }
+      : createInitialEventDetails()
     const newProjectData = createPersistableProject({
       players: createInitialPlayers(template),
       eventDetails: initialEventDetails,
@@ -964,7 +966,7 @@ function App({ currentUser, onLogout }) {
   const regenerateProjectTemplate = () => {
     if (!activeTemplate.generated || isRestoring) return
     const shouldRegenerate = window.confirm(
-      'Régénérer le template de ce projet ? Le layout actuel sera remplacé.',
+      t("Régénérer le modèle de ce projet ? La composition actuelle sera remplacée."),
     )
     if (!shouldRegenerate) return
 
@@ -973,7 +975,7 @@ function App({ currentUser, onLogout }) {
       saveTimeoutRef.current = null
     }
     setIsSaving(true)
-    setSaveStatus('Génération du template…')
+    setSaveStatus(msg("Génération du modèle…"))
 
     try {
       const generatedTemplate = generateTemplate({
@@ -1072,7 +1074,7 @@ function App({ currentUser, onLogout }) {
     const collection = projectCollectionRef.current
     const activeProject = collection?.projects?.[collection.activeProjectId]
     if (!activeProject || isRestoring) return
-    if (!window.confirm(`Supprimer définitivement le projet "${activeProject.name}" ?`)) return
+    if (!window.confirm(t("Supprimer définitivement le projet \"{0}\" ?", { 0: activeProject.name }))) return
 
     const remainingProjects = { ...collection.projects }
     delete remainingProjects[activeProject.id]
@@ -1081,12 +1083,12 @@ function App({ currentUser, onLogout }) {
     if (!nextProject) {
       const emptyData = createPersistableProject({
         players: createInitialPlayers(),
-        eventDetails: { ...INITIAL_EVENT_DETAILS },
+        eventDetails: createInitialEventDetails(),
         selectedLayer: INITIAL_SELECTED_LAYER,
         exportScale: 4,
         template: zeroTemplate,
       })
-      nextProject = createProjectRecord({ name: 'Nouveau projet', data: emptyData })
+      nextProject = createProjectRecord({ name: t("Nouveau projet"), data: emptyData })
       remainingProjects[nextProject.id] = nextProject
     }
 
@@ -1117,7 +1119,7 @@ function App({ currentUser, onLogout }) {
       })
     } catch (error) {
       console.error(error)
-      setExportError("L'export a échoué. Vérifie les images puis réessaie.")
+      setExportError(msg("L'export a échoué. Vérifie les images puis réessaie."))
     } finally {
       setIsExporting(false)
       setExportType('')
@@ -1132,7 +1134,7 @@ function App({ currentUser, onLogout }) {
       await onLogout()
     } catch (error) {
       console.error(error)
-      setSaveStatus('Déconnexion impossible. Réessaie.')
+      setSaveStatus(msg("Déconnexion impossible. Réessaie."))
     } finally {
       setIsSaving(false)
     }
@@ -1157,7 +1159,7 @@ function App({ currentUser, onLogout }) {
       })
     } catch (error) {
       console.error(error)
-      setExportError(error.message || "L'export PSD a échoué. Réessaie en x2.")
+      setExportError(error.message || msg("L'export PSD a échoué. Réessaie en x2."))
     } finally {
       setIsExporting(false)
       setExportType('')
@@ -1171,10 +1173,10 @@ function App({ currentUser, onLogout }) {
           <div className="app-brand">
             <div>
               <p className="eyebrow">BracketCanvas</p>
-              <h1 id="app-title">Éditeur Top 8</h1>
+              <h1 id="app-title">{t("Éditeur Top 8")}</h1>
             </div>
           </div>
-          <p className="app-intro">Compose le classement, ajuste les renders et exporte le visuel final.</p>
+          <p className="app-intro">{t("Compose le classement, ajuste les visuels des personnages et exporte le résultat final.")}</p>
         </header>
 
         <AccountMenu
@@ -1227,8 +1229,8 @@ function App({ currentUser, onLogout }) {
 
         <section className="save-panel" aria-labelledby="save-title">
           <div>
-            <p className="eyebrow">Projet</p>
-            <h2 id="save-title">Sauvegarde cloud</h2>
+            <p className="eyebrow">{t("Projet")}</p>
+            <h2 id="save-title">{t("Sauvegarde cloud")}</h2>
           </div>
           <div className="save-actions">
             <button
@@ -1236,16 +1238,16 @@ function App({ currentUser, onLogout }) {
               disabled={isSaving || isRestoring}
               onClick={persistCurrentProject}
             >
-              {isSaving ? 'Sauvegarde…' : 'Sauvegarder'}
+              {isSaving ? t("Sauvegarde…") : t("Sauvegarder")}
             </button>
           </div>
-          <p role="status" aria-live="polite">{saveStatus}</p>
+          <p role="status" aria-live="polite">{t(saveStatus)}</p>
         </section>
 
         <div className="players-heading players-heading-with-action">
           <div>
-            <p className="eyebrow">Classement</p>
-            <h2>Joueurs</h2>
+            <p className="eyebrow">{t("Classement")}</p>
+            <h2>{t("Joueurs")}</h2>
           </div>
           <button
             className="auto-place-all-button"
@@ -1253,7 +1255,7 @@ function App({ currentUser, onLogout }) {
             disabled={Boolean(autoPlacementTarget) || !players.some(({ render }) => render)}
             onClick={autoPlaceAllPlayers}
           >
-            {autoPlacementTarget === 'all' ? 'Placement en cours…' : '✨ Auto placer tous les personnages'}
+            {autoPlacementTarget === 'all' ? t("Placement en cours…") : t("Placer automatiquement tous les personnages")}
           </button>
         </div>
 
@@ -1302,8 +1304,8 @@ function App({ currentUser, onLogout }) {
       <section className="preview-panel" aria-labelledby="preview-title">
         <div className="preview-heading">
           <div>
-            <p className="eyebrow">Aperçu</p>
-            <h2 id="preview-title">{activeTemplate.name}</h2>
+            <p className="eyebrow">{t("Aperçu")}</p>
+            <h2 id="preview-title">{t(activeTemplate.name)}</h2>
           </div>
           <div className="preview-actions">
             <span className="canvas-size">686 × 386 px</span>
@@ -1314,7 +1316,7 @@ function App({ currentUser, onLogout }) {
             />
             <div className="export-controls">
               <label htmlFor="export-scale">
-                <span>Qualité</span>
+                <span>{t("Qualité")}</span>
                 <select
                   id="export-scale"
                   value={exportScale}
@@ -1327,7 +1329,7 @@ function App({ currentUser, onLogout }) {
                 </select>
               </label>
               <button type="button" disabled={isExporting} onClick={exportPng}>
-                {exportType === 'png' ? 'Export en cours…' : 'Exporter PNG'}
+                {exportType === 'png' ? t("Export en cours…") : t("Exporter PNG")}
               </button>
               <button
                 className="export-psd-button"
@@ -1335,7 +1337,7 @@ function App({ currentUser, onLogout }) {
                 disabled={isExporting}
                 onClick={exportPsd}
               >
-                {exportType === 'psd' ? 'Création du PSD…' : 'Exporter PSD'}
+                {exportType === 'psd' ? t("Création du PSD…") : t("Exporter PSD")}
               </button>
             </div>
           </div>
@@ -1354,11 +1356,9 @@ function App({ currentUser, onLogout }) {
             }
           />
         </div>
-        <p className="preview-note">
-          Glisse les renders et les numéros directement dans le canvas. Pince pour redimensionner.
-        </p>
+        <p className="preview-note">{t("Glisse les visuels des personnages et les numéros directement sur le canevas. Pince pour redimensionner.")}</p>
         <p className="export-status" role="status" aria-live="polite">
-          {exportError}
+          {t(exportError)}
         </p>
       </section>
       {isPaletteEditorOpen && (

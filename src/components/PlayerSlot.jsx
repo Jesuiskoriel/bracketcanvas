@@ -1,3 +1,4 @@
+import { t, useLanguage } from '../i18n.js'
 import { memo, useEffect, useRef } from 'react'
 import PlacementNumber from './PlacementNumber.jsx'
 
@@ -33,6 +34,7 @@ function PlayerSlot({
   onChange,
   showAutoPlacementDebug,
 }) {
+  useLanguage()
   const primaryRef = useRef(null)
   const secondaryRef = useRef(null)
   const dragRef = useRef(null)
@@ -249,7 +251,7 @@ function PlayerSlot({
       className={`player-slot${slot.podiumTone ? ` player-slot-${slot.podiumTone}` : ''}`}
       data-psd-player={player.id}
       style={slotStyle}
-      aria-label={`Place ${player.placement}`}
+      aria-label={t('Place {0}', { 0: player.placement })}
     >
       {player.rankLayer === 'back' && (
         <PlacementNumber
@@ -309,7 +311,7 @@ function PlayerSlot({
         data-psd-role="player-part"
         style={nameStyle}
       >
-        {player.playerName || `Joueur ${player.placement}`}
+        {player.playerName || t("Joueur {0}", { 0: player.placement })}
       </span>
       {showAutoPlacementDebug && player.autoPlacementDebug && (
         <div

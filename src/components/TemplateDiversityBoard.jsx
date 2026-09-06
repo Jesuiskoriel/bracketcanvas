@@ -1,3 +1,4 @@
+import { t, useLanguage } from '../i18n.js'
 import { useEffect, useMemo, useState } from 'react'
 import {
   analyzeGeneratedTemplate,
@@ -9,6 +10,7 @@ import {
   templateSignatureDistance,
 } from '../templates/generated/generator.js'
 import Top8Canvas from './Top8Canvas.jsx'
+import LanguageSelect from './LanguageSelect.jsx'
 import './TemplateDiversityBoard.css'
 
 const COUNTS = [20, 30, 50]
@@ -66,7 +68,7 @@ const geometryFingerprint = (template) => (template?.slots || []).map((slot) => 
 
 const normalizeIssue = (issue) => {
   if (typeof issue === 'string') return issue
-  return issue?.message || issue?.code || 'Problème non détaillé'
+  return issue?.message || issue?.code || t("Problème non détaillé")
 }
 
 const normalizeAnalysis = (analysis) => {
@@ -111,7 +113,7 @@ const isRenderableTemplate = (template) =>
 const createPreviewPlayers = (template) => template.slots.map((slot, index) => ({
   id: slot.id,
   placement: slot.placement,
-  playerName: `PLAYER ${index + 1}`,
+  playerName: t('JOUEUR {0}', { 0: index + 1 }),
   character: '',
   renderId: '',
   render: '',
@@ -151,10 +153,11 @@ const cancelScheduled = (scheduled) => {
 }
 
 function TemplateCard({ entry }) {
-  const players = useMemo(
-    () => entry.renderable ? createPreviewPlayers(entry.template) : [],
-    [entry.renderable, entry.template],
-  )
+  const language = useLanguage()
+  const players = useMemo(() => {
+    void language
+    return entry.renderable ? createPreviewPlayers(entry.template) : []
+  }, [entry.renderable, entry.template, language])
   const eventDetails = useMemo(() => ({
     eventName: 'DIVERSITY AUDIT',
     subtitle: `SEED ${String(entry.index + 1).padStart(2, '0')}`,
@@ -176,19 +179,19 @@ function TemplateCard({ entry }) {
       <header className="tdb-card-header">
         <div>
           <span className="tdb-card-index">#{String(entry.index + 1).padStart(2, '0')}</span>
-          <h2 id={`tdb-card-${entry.index}`}>{entry.template?.name || 'Génération impossible'}</h2>
+          <h2 id={`tdb-card-${entry.index}`}>{entry.template?.name || t("Génération impossible")}</h2>
           <p>{entry.seed}</p>
         </div>
         <span
           className={`tdb-score${entry.analysis.valid ? ' is-valid' : ' is-invalid'}`}
-          aria-label={`Score ${entry.analysis.score} sur 100, ${entry.analysis.valid ? 'valide' : 'invalide'}`}
+          aria-label={t('Score {0} sur 100, {1}', { 0: entry.analysis.score, 1: entry.analysis.valid ? t('valide') : t('invalide') })}
         >
           <strong>{entry.analysis.score}</strong>
-          <small>{entry.analysis.valid ? 'valide' : 'invalide'}</small>
+          <small>{entry.analysis.valid ? t("valide") : t("invalide")}</small>
         </span>
       </header>
 
-      <div className="tdb-preview" aria-label={`Aperçu ${entry.index + 1}`}>
+      <div className="tdb-preview" aria-label={t('Aperçu {0}', { 0: entry.index + 1 })}>
         {entry.renderable ? (
           <Top8Canvas
             template={entry.template}
@@ -199,9 +202,9 @@ function TemplateCard({ entry }) {
             onSelectLayer={NOOP}
           />
         ) : (
-          <div className="tdb-preview-error" role="img" aria-label="Template non affichable">
-            <strong>Template non affichable</strong>
-            <span>Le contrat minimal du canvas n’est pas respecté.</span>
+          <div className="tdb-preview-error" role="img" aria-label={t("Template non affichable")}>
+            <strong>{t("Template non affichable")}</strong>
+            <span>{t("Le contrat minimal du canvas n’est pas respecté.")}</span>
           </div>
         )}
       </div>
@@ -209,14 +212,14 @@ function TemplateCard({ entry }) {
       <div className="tdb-card-meta">
         <div className="tdb-signature" title={entry.signatureKey}>
           {signatureBadges.length ? signatureBadges.map(({ key, label, value }) => (
-            <span key={key}><small>{label}</small>{value}</span>
+            <span key={key}><small>{t(label)}</small>{value}</span>
           )) : <span><small>signature</small>{entry.signatureKey || '—'}</span>}
         </div>
         {(entry.duplicate || entry.analysis.issues.length > 0 || entry.analysis.warnings.length > 0) && (
           <ul className="tdb-issues">
-            {entry.duplicate && <li>Signature dupliquée dans cette planche.</li>}
-            {entry.analysis.issues.slice(0, 2).map((issue) => <li key={issue}>{issue}</li>)}
-            {entry.analysis.warnings.slice(0, 1).map((warning) => <li key={warning}>Avertissement : {warning}</li>)}
+            {entry.duplicate && <li>{t("Signature dupliquée dans cette planche.")}</li>}
+            {entry.analysis.issues.slice(0, 2).map((issue) => <li key={issue}>{t(issue)}</li>)}
+            {entry.analysis.warnings.slice(0, 1).map((warning) => <li key={warning}>{t("Avertissement : ")}{t(warning)}</li>)}
           </ul>
         )}
       </div>
@@ -225,6 +228,7 @@ function TemplateCard({ entry }) {
 }
 
 export default function TemplateDiversityBoard() {
+  useLanguage()
   const [count, setCount] = useState(20)
   const [family, setFamily] = useState('surprise')
   const [variation, setVariation] = useState('creative')
@@ -296,7 +300,7 @@ export default function TemplateDiversityBoard() {
             analysis: {
               valid: false,
               score: 0,
-              issues: [error?.message || 'La génération a échoué.'],
+              issues: [error?.message || t("La génération a échoué.")],
               warnings: [],
             },
             signature: null,
@@ -385,15 +389,16 @@ export default function TemplateDiversityBoard() {
     <main className="template-diversity-board">
       <header className="tdb-page-header">
         <div className="tdb-title-block">
-          <span className="tdb-dev-label">DEV ONLY</span>
-          <p>BracketCanvas / audit du générateur</p>
-          <h1>Template diversity board</h1>
-          <span>Une planche réelle pour juger la variété visuelle, la qualité et les doublons.</span>
+          <span className="tdb-dev-label">{t('DÉVELOPPEMENT UNIQUEMENT')}</span>
+          <LanguageSelect />
+          <p>{t("BracketCanvas / audit du générateur")}</p>
+        <h1>{t('Planche de diversité des modèles')}</h1>
+          <span>{t("Une planche réelle pour juger la variété visuelle, la qualité et les doublons.")}</span>
         </div>
 
-        <section className="tdb-controls" aria-label="Paramètres de la planche">
+        <section className="tdb-controls" aria-label={t("Paramètres de la planche")}>
           <form className="tdb-seed-control" onSubmit={applySeed}>
-            <label htmlFor="tdb-seed">Seed racine</label>
+            <label htmlFor="tdb-seed">{t("Seed racine")}</label>
             <div>
               <input
                 id="tdb-seed"
@@ -401,23 +406,21 @@ export default function TemplateDiversityBoard() {
                 spellCheck="false"
                 onChange={(event) => setSeedDraft(event.target.value)}
               />
-              <button type="submit" disabled={!seedDraft.trim()}>Appliquer</button>
-              <button type="button" onClick={randomizeSeed}>Nouvelle seed</button>
+              <button type="submit" disabled={!seedDraft.trim()}>{t("Appliquer")}</button>
+              <button type="button" onClick={randomizeSeed}>{t("Nouvelle seed")}</button>
             </div>
           </form>
 
-          <label className="tdb-select-control" htmlFor="tdb-family">
-            Direction artistique
-            <select id="tdb-family" value={family} onChange={(event) => setFamily(event.target.value)}>
-              <option value="surprise">Surprends-moi · toutes les directions</option>
+          <label className="tdb-select-control" htmlFor="tdb-family">{t("Direction artistique")}<select id="tdb-family" value={family} onChange={(event) => setFamily(event.target.value)}>
+              <option value="surprise">{t("Surprends-moi · toutes les directions")}</option>
               {generatedFamilies.map((candidate) => (
-                <option key={candidate.id} value={candidate.id}>{candidate.label}</option>
+                <option key={candidate.id} value={candidate.id}>{t(candidate.label)}</option>
               ))}
             </select>
           </label>
 
           <fieldset className="tdb-segment-control">
-            <legend>Variation</legend>
+            <legend>{t("Variation")}</legend>
             <div>{VARIATIONS.map((candidate) => (
               <button
                 type="button"
@@ -426,13 +429,13 @@ export default function TemplateDiversityBoard() {
                 aria-pressed={variation === candidate.id}
                 onClick={() => setVariation(candidate.id)}
               >
-                {candidate.label}
+                {t(candidate.label)}
               </button>
             ))}</div>
           </fieldset>
 
           <fieldset className="tdb-segment-control">
-            <legend>Nombre de previews</legend>
+            <legend>{t("Nombre de previews")}</legend>
             <div>{COUNTS.map((candidate) => (
               <button
                 type="button"
@@ -448,16 +451,16 @@ export default function TemplateDiversityBoard() {
         </section>
       </header>
 
-      <section className="tdb-summary" aria-label="Résultats de l’audit">
-        <div className="tdb-stat"><small>Validité</small><strong>{stats.valid}/{entries.length || count}</strong></div>
-        <div className="tdb-stat"><small>Signatures</small><strong>{stats.signatures}</strong></div>
-        <div className="tdb-stat"><small>Layouts</small><strong>{stats.layouts}</strong></div>
-        <div className="tdb-stat"><small>Géométries</small><strong>{stats.geometries}</strong></div>
-        <div className="tdb-stat"><small>Distance médiane</small><strong>{stats.distance.toFixed(2)}</strong></div>
-        <div className="tdb-stat"><small>Doublons</small><strong>{stats.duplicates}</strong></div>
+      <section className="tdb-summary" aria-label={t("Résultats de l’audit")}>
+        <div className="tdb-stat"><small>{t("Validité")}</small><strong>{stats.valid}/{entries.length || count}</strong></div>
+        <div className="tdb-stat"><small>{t("Signatures")}</small><strong>{stats.signatures}</strong></div>
+        <div className="tdb-stat"><small>{t("Layouts")}</small><strong>{stats.layouts}</strong></div>
+        <div className="tdb-stat"><small>{t("Géométries")}</small><strong>{stats.geometries}</strong></div>
+        <div className="tdb-stat"><small>{t("Distance médiane")}</small><strong>{stats.distance.toFixed(2)}</strong></div>
+        <div className="tdb-stat"><small>{t("Doublons")}</small><strong>{stats.duplicates}</strong></div>
 
         <fieldset className="tdb-filter-control">
-          <legend>Filtrer la planche</legend>
+          <legend>{t("Filtrer la planche")}</legend>
           <div>{FILTERS.map((candidate) => (
             <button
               type="button"
@@ -466,25 +469,25 @@ export default function TemplateDiversityBoard() {
               aria-pressed={filter === candidate.id}
               onClick={() => setFilter(candidate.id)}
             >
-              {candidate.label}
+              {t(candidate.label)}
             </button>
           ))}</div>
         </fieldset>
       </section>
 
       <div className="tdb-progress" aria-live="polite">
-        <span>{isGenerating ? `Génération ${progress}/${count}` : `${visibleEntries.length} preview${visibleEntries.length > 1 ? 's' : ''} affichée${visibleEntries.length > 1 ? 's' : ''}`}</span>
-        <progress max={count} value={progress}>{progress} sur {count}</progress>
+        <span>{isGenerating ? t('Génération {0}/{1}', { 0: progress, 1: count }) : t(visibleEntries.length === 1 ? '{0} aperçu affiché' : '{0} aperçus affichés', { 0: visibleEntries.length })}</span>
+        <progress max={count} value={progress}>{progress}{t(" sur ")}{count}</progress>
       </div>
 
       {visibleEntries.length > 0 ? (
-        <section className="tdb-grid" aria-label="Previews des templates">
+        <section className="tdb-grid" aria-label={t("Previews des templates")}>
           {visibleEntries.map((entry) => <TemplateCard key={entry.seed} entry={entry} />)}
         </section>
       ) : !isGenerating && (
         <div className="tdb-empty" role="status">
-          <strong>Aucun résultat pour ce filtre.</strong>
-          <span>La planche ne contient ni template invalide ni doublon correspondant.</span>
+          <strong>{t("Aucun résultat pour ce filtre.")}</strong>
+          <span>{t("La planche ne contient ni template invalide ni doublon correspondant.")}</span>
         </div>
       )}
     </main>

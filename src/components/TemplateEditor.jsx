@@ -1,14 +1,16 @@
+import { t, useLanguage } from '../i18n.js'
 function TemplateEditor({ details, onChange, onLogoChange }) {
+  useLanguage()
   return (
     <section className="template-editor" aria-labelledby="event-details-title">
       <div className="section-heading">
-        <p className="eyebrow">Informations</p>
-        <h2 id="event-details-title">Événement</h2>
+        <p className="eyebrow">{t("Informations")}</p>
+        <h2 id="event-details-title">{t("Événement")}</h2>
       </div>
 
       <div className="template-fields">
         <label className="text-control" htmlFor="event-name">
-          <span>Nom de l’événement</span>
+          <span>{t("Nom de l’événement")}</span>
           <input
             id="event-name"
             type="text"
@@ -19,31 +21,31 @@ function TemplateEditor({ details, onChange, onLogoChange }) {
         </label>
 
         <label className="text-control" htmlFor="event-subtitle">
-          <span>Sous-titre / édition</span>
+          <span>{t("Sous-titre / édition")}</span>
           <input
             id="event-subtitle"
             type="text"
             value={details.subtitle || ''}
             maxLength={40}
-            placeholder="Weekly #34"
+            placeholder={t("Weekly #34")}
             onChange={(event) => onChange({ subtitle: event.target.value })}
           />
         </label>
 
         <label className="text-control" htmlFor="event-date">
-          <span>Date</span>
+          <span>{t("Date")}</span>
           <input
             id="event-date"
             type="text"
             value={details.date}
             maxLength={16}
-            placeholder="JJ/MM/AAAA"
+            placeholder={t("JJ/MM/AAAA")}
             onChange={(event) => onChange({ date: event.target.value })}
           />
         </label>
 
         <label className="text-control" htmlFor="participant-count">
-          <span>Nombre de participants</span>
+          <span>{t("Nombre de participants")}</span>
           <input
             id="participant-count"
             type="text"
@@ -58,10 +60,10 @@ function TemplateEditor({ details, onChange, onLogoChange }) {
         </label>
 
         <div className="logo-control tournament-logo-control">
-          <span>Logo du tournoi</span>
+          <span>{t("Logo du tournoi")}</span>
           <div className="logo-input-row">
             <label className="file-button">
-              {details.tournamentLogo ? 'Remplacer le logo' : 'Importer un logo'}
+              {details.tournamentLogo ? t("Remplacer le logo") : t("Importer un logo")}
               <input
                 id="tournament-logo"
                 className="visually-hidden-file"
@@ -78,12 +80,10 @@ function TemplateEditor({ details, onChange, onLogoChange }) {
                 className="remove-logo-button"
                 type="button"
                 onClick={() => onLogoChange(null)}
-              >
-                Retirer
-              </button>
+              >{t("Retirer")}</button>
             )}
           </div>
-          <small>{details.tournamentLogoName || 'Affiché dans le coin supérieur droit'}</small>
+          <small>{details.tournamentLogoName || t("Affiché dans le coin supérieur droit")}</small>
         </div>
       </div>
     </section>

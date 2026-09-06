@@ -17,6 +17,7 @@ import {
 } from './auth.js'
 import { closeDatabase, database } from './database.js'
 import { mailerIsConfigured, sendPasswordResetEmail } from './mailer.js'
+import { negotiateLanguage, translate } from '../shared/i18n.js'
 
 const port = Number(process.env.PORT) || 3000
 const distDirectory = resolve('./dist')
@@ -43,6 +44,7 @@ const getApplicationOrigin = (request) => {
 const buildPasswordResetUrl = (request, token) => {
   const url = new URL('/reset-password', getApplicationOrigin(request))
   url.searchParams.set('token', token)
+  url.searchParams.set('lang', negotiateLanguage(request.headers['accept-language']))
   return url.toString()
 }
 
@@ -60,11 +62,18 @@ const mimeTypes = {
 }
 
 const sendJson = (response, status, payload, headers = {}) => {
-  const body = JSON.stringify(payload)
+  const localized = { ...payload }
+  for (const field of ['error', 'message']) {
+    if (typeof payload[field] !== 'string') continue
+    localized[`${field}Key`] = translate('fr', payload[field])
+    localized[field] = translate(response.language, payload[field])
+  }
+  const body = JSON.stringify(localized)
   response.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
     'Content-Length': Buffer.byteLength(body),
     'Cache-Control': 'no-store',
+    'Content-Language': response.language || 'fr',
     ...headers,
   })
   response.end(body)
@@ -243,7 +252,7 @@ const handleApi = async (request, response, pathname) => {
       resetLink = buildPasswordResetUrl(request, reset.token)
       if (mailerIsConfigured()) {
         try {
-          await sendPasswordResetEmail({ to: userRecord.email, resetLink })
+          await sendPasswordResetEmail({ to: userRecord.email, resetLink, language: response.language })
         } catch (error) {
           console.error(`Password reset email failed for ${userRecord.email}:`, error)
           console.info(`Password reset link for ${userRecord.email}: ${resetLink}`)
@@ -612,6 +621,7 @@ const sessionCleanup = setInterval(cleanupAuthRecords, 60 * 60 * 1000)
 sessionCleanup.unref()
 
 const server = createServer(async (request, response) => {
+  response.language = negotiateLanguage(request.headers['accept-language'])
   try {
     const pathname = new URL(request.url, `http://${request.headers.host || 'localhost'}`).pathname
     if (pathname.startsWith('/api/')) await handleApi(request, response, pathname)

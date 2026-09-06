@@ -1,6 +1,8 @@
+import { t, useLanguage } from '../i18n.js'
 import { useEffect, useRef } from 'react'
 
 export default function BetaWelcomeModal({ onClose }) {
+  useLanguage()
   const closeButtonRef = useRef(null)
 
   useEffect(() => {
@@ -27,20 +29,14 @@ export default function BetaWelcomeModal({ onClose }) {
         aria-describedby="beta-welcome-description"
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <span className="beta-welcome-badge">Version bêta</span>
-        <h2 id="beta-welcome-title">Bienvenue sur BracketCanvas</h2>
+        <span className="beta-welcome-badge">{t("Version bêta")}</span>
+        <h2 id="beta-welcome-title">{t("Bienvenue sur BracketCanvas")}</h2>
         <div id="beta-welcome-description">
-          <p><strong>BracketCanvas est développé par Koriel.</strong></p>
-          <p>
-            L’application évolue encore : plus elle accueille d’utilisateurs et de
-            retours, plus elle pourra devenir complète et agréable à utiliser.
-          </p>
-          <p>
-            Pour partager un feedback ou signaler un problème, ajoute
-            <span className="discord-handle"> Jesuiskoriel</span> sur Discord.
-          </p>
+          <p><strong>{t("BracketCanvas est développé par Koriel.")}</strong></p>
+          <p>{t("L’application évolue encore : plus elle accueille d’utilisateurs et de retours, plus elle pourra devenir complète et agréable à utiliser.")}</p>
+          <p>{t("Pour donner ton avis ou signaler un problème, ajoute")}<span className="discord-handle"> Jesuiskoriel</span>{t(" sur Discord.")}</p>
         </div>
-        <button ref={closeButtonRef} type="button" onClick={onClose}>Découvrir l’application</button>
+        <button ref={closeButtonRef} type="button" onClick={onClose}>{t("Découvrir l’application")}</button>
       </section>
     </div>
   )

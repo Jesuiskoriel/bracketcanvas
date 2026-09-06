@@ -1,3 +1,4 @@
+import { t, useLanguage } from '../i18n.js'
 function MoonIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -16,16 +17,17 @@ function SunIcon() {
 }
 
 export default function ThemeToggle({ theme, onChange }) {
+  useLanguage()
   const isLight = theme === 'light'
 
   return (
     <label className="theme-toggle">
-      <span className="theme-toggle-label">{isLight ? 'Mode clair' : 'Mode sombre'}</span>
+      <span className="theme-toggle-label">{isLight ? t("Mode clair") : t("Mode sombre")}</span>
       <span className="theme-toggle-control">
         <input
           type="checkbox"
           checked={isLight}
-          aria-label={isLight ? 'Activer le mode sombre' : 'Activer le mode clair'}
+          aria-label={isLight ? t("Activer le mode sombre") : t("Activer le mode clair")}
           onChange={(event) => onChange(event.target.checked ? 'light' : 'dark')}
         />
         <span className="theme-toggle-track" aria-hidden="true">

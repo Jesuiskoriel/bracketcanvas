@@ -1,3 +1,4 @@
+import { t, getLocale } from '../i18n.js'
 const STARTGG_ENDPOINT = 'https://api.start.gg/gql/alpha'
 const SETS_PER_PAGE = 20
 const MAX_CHARACTER_PAGES = 45
@@ -64,7 +65,7 @@ export const parseStartggEventSlug = (value) => {
   }
 
   throw new StartggImportError(
-    "Colle l’URL complète d’un event Start.gg (…/tournament/…/event/…).",
+    t("Colle l’URL complète d’un event Start.gg (…/tournament/…/event/…)."),
   )
 }
 
@@ -83,32 +84,32 @@ const requestStartgg = async ({ token, query, variables, signal }) => {
   } catch (error) {
     if (error.name === 'AbortError') throw error
     throw new StartggImportError(
-      'Connexion à Start.gg impossible. Vérifie ta connexion puis réessaie.',
+      t("Connexion à Start.gg impossible. Vérifie ta connexion puis réessaie."),
     )
   }
 
   if (response.status === 401 || response.status === 403) {
-    throw new StartggImportError('Jeton Start.gg invalide ou non autorisé.')
+    throw new StartggImportError(t("Jeton Start.gg invalide ou non autorisé."))
   }
   if (response.status === 429) {
     throw new StartggImportError(
-      'Limite de requêtes Start.gg atteinte. Attends un instant puis réessaie.',
+      t("Limite de requêtes Start.gg atteinte. Attends un instant puis réessaie."),
     )
   }
   if (!response.ok) {
-    throw new StartggImportError(`Start.gg a répondu avec l’erreur ${response.status}.`)
+    throw new StartggImportError(t("Start.gg a répondu avec l’erreur {0}.", { 0: response.status }))
   }
 
   const payload = await response.json()
   if (payload.errors?.length) {
-    throw new StartggImportError(payload.errors[0].message || 'Réponse Start.gg invalide.')
+    throw new StartggImportError(payload.errors[0].message || t("Réponse Start.gg invalide."))
   }
   return payload.data
 }
 
 const formatEventDate = (timestamp) => {
   if (!Number.isFinite(timestamp)) return ''
-  return new Intl.DateTimeFormat('fr-FR', {
+  return new Intl.DateTimeFormat(getLocale(), {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -119,7 +120,7 @@ const formatEventDate = (timestamp) => {
 const getGamerTag = (entrant) =>
   entrant?.participants?.find((participant) => participant?.gamerTag)?.gamerTag ||
   entrant?.name ||
-  'Joueur sans nom'
+  t("Joueur sans nom")
 
 const countCharacterSelections = (sets, topEntrantIds, countsByEntrant) => {
   sets.forEach((set) => {
@@ -163,7 +164,7 @@ const fetchCharacterUsage = async ({ eventId, entrantIds, token, signal }) => {
   const totalPages = connection?.pageInfo?.totalPages || 1
 
   if (totalPages > MAX_CHARACTER_PAGES) {
-    return { countsByEntrant, note: 'Trop de sets pour une détection fiable.' }
+    return { countsByEntrant, note: t("Trop de sets pour une détection fiable.") }
   }
 
   countCharacterSelections(connection?.nodes || [], topEntrantIds, countsByEntrant)
@@ -193,7 +194,7 @@ const getMostPlayedCharacters = (counts = new Map()) =>
     .map(([name, games]) => ({ name, games }))
 
 export const fetchStartggTop8 = async ({ url, token, signal }) => {
-  if (!token.trim()) throw new StartggImportError('Renseigne ton jeton API Start.gg.')
+  if (!token.trim()) throw new StartggImportError(t("Renseigne ton jeton API Start.gg."))
 
   const slug = parseStartggEventSlug(url)
   const data = await requestStartgg({
@@ -203,7 +204,7 @@ export const fetchStartggTop8 = async ({ url, token, signal }) => {
     signal,
   })
   const event = data?.event
-  if (!event) throw new StartggImportError('Cet event Start.gg est introuvable.')
+  if (!event) throw new StartggImportError(t("Cet event Start.gg est introuvable."))
 
   const standings = (event.standings?.nodes || [])
     .filter((standing) => standing?.entrant && Number.isFinite(standing.placement))
@@ -211,7 +212,7 @@ export const fetchStartggTop8 = async ({ url, token, signal }) => {
     .slice(0, 8)
   if (!standings.length) {
     throw new StartggImportError(
-      'Aucun classement final n’est encore disponible pour cet event.',
+      t("Aucun classement final n’est encore disponible pour cet event."),
     )
   }
 
@@ -225,11 +226,11 @@ export const fetchStartggTop8 = async ({ url, token, signal }) => {
     })
   } catch (error) {
     if (error.name === 'AbortError') throw error
-    characterUsage.note = 'Les personnages n’ont pas pu être récupérés.'
+    characterUsage.note = t("Les personnages n’ont pas pu être récupérés.")
   }
 
   return {
-    eventName: event.name || 'Event Start.gg',
+    eventName: event.name || t("Event Start.gg"),
     date: formatEventDate(event.startAt),
     participantCount: Number.isFinite(event.numEntrants) ? String(event.numEntrants) : '',
     characterNote: characterUsage.note,

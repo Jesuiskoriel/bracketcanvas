@@ -1,3 +1,4 @@
+import { t } from '../i18n.js'
 import { toBlob } from 'html-to-image'
 
 const EXPORT_FONT_SELECTOR =
@@ -91,7 +92,7 @@ export const exportTop8AsPng = async ({
   width,
   height,
 }) => {
-  if (!canvasNode) throw new Error('Le canvas est introuvable.')
+  if (!canvasNode) throw new Error(t("Le canvas est introuvable."))
 
   await document.fonts.load('16px "Hylia Serif"')
   await document.fonts.ready
@@ -112,7 +113,7 @@ export const exportTop8AsPng = async ({
       skipAutoScale: true,
     })
 
-    if (!blob) throw new Error("L'image PNG n'a pas pu être créée.")
+    if (!blob) throw new Error(t("L'image PNG n'a pas pu être créée."))
     downloadBlob(blob, createExportFilename(eventName))
   } finally {
     wrapper.remove()

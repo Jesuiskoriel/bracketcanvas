@@ -1,9 +1,11 @@
+import { msg, t, useLanguage } from '../i18n.js'
 import { useEffect, useRef, useState } from 'react'
 import TemplateCreationWizard from './TemplateCreationWizard.jsx'
 
 const PROJECT_NAME_MAX_LENGTH = 64
 
 function ProjectDialog({ mode, initialName, onCancel, onSubmit, required = false }) {
+  useLanguage()
   const [name, setName] = useState(initialName)
   const [step, setStep] = useState('name')
   const [error, setError] = useState('')
@@ -27,7 +29,7 @@ function ProjectDialog({ mode, initialName, onCancel, onSubmit, required = false
     event.preventDefault()
     const normalizedName = name.trim()
     if (!normalizedName) {
-      setError('Donne un nom au projet.')
+      setError(msg("Donne un nom au projet."))
       inputRef.current?.focus()
       return
     }
@@ -51,16 +53,14 @@ function ProjectDialog({ mode, initialName, onCancel, onSubmit, required = false
         {step === 'name' ? (
           <>
             <header>
-              <p className="eyebrow">{required ? 'Bienvenue dans BracketCanvas' : isCreateMode ? 'Création' : 'Workspace'}</p>
+              <p className="eyebrow">{required ? t("Bienvenue dans BracketCanvas") : isCreateMode ? t("Création") : t("Espace de travail")}</p>
               <h2 id="project-dialog-title">
-                {required ? 'Crée ton premier canvas' : isCreateMode ? 'Nouveau projet' : 'Renommer le projet'}
+                {required ? t("Crée ton premier canevas") : isCreateMode ? t("Nouveau projet") : t("Renommer le projet")}
               </h2>
-              {required && <p className="project-dialog-intro">Commence par donner un nom à ton projet. Tu créeras ensuite son identité visuelle.</p>}
+              {required && <p className="project-dialog-intro">{t("Commence par donner un nom à ton projet. Tu créeras ensuite son identité visuelle.")}</p>}
             </header>
             <form onSubmit={continueWithName}>
-              <label className="text-control project-name-control" htmlFor="project-name">
-                Nom du projet
-                <input
+              <label className="text-control project-name-control" htmlFor="project-name">{t("Nom du projet")}<input
                   ref={inputRef}
                   id="project-name"
                   name="projectName"
@@ -75,10 +75,10 @@ function ProjectDialog({ mode, initialName, onCancel, onSubmit, required = false
                   aria-invalid={Boolean(error)}
                 />
               </label>
-              {error && <p id="project-name-error" className="project-dialog-error" role="alert">{error}</p>}
+              {error && <p id="project-name-error" className="project-dialog-error" role="alert">{t(error)}</p>}
               <div className="project-dialog-actions">
-                {!required && <button type="button" onClick={onCancel}>Annuler</button>}
-                <button type="submit">{isCreateMode ? 'Continuer' : 'Renommer'}</button>
+                {!required && <button type="button" onClick={onCancel}>{t("Annuler")}</button>}
+                <button type="submit">{isCreateMode ? t("Continuer") : t("Renommer")}</button>
               </div>
             </form>
           </>
@@ -109,6 +109,7 @@ export default function ProjectSwitcher({
   onDelete,
   forceCreate = false,
 }) {
+  useLanguage()
   const [dialogMode, setDialogMode] = useState('')
   const activeProject = projects.find(({ id }) => id === activeProjectId)
 
@@ -132,21 +133,19 @@ export default function ProjectSwitcher({
       <section className="project-switcher" aria-labelledby="project-switcher-title">
         <div className="project-switcher-heading">
           <div>
-            <p className="eyebrow">Workspace</p>
-            <h2 id="project-switcher-title">Projet actuel</h2>
+            <p className="eyebrow">{t("Espace de travail")}</p>
+            <h2 id="project-switcher-title">{t("Projet actuel")}</h2>
           </div>
           <button
             className="project-create-button"
             type="button"
             disabled={disabled}
             onClick={() => setDialogMode('create')}
-          >
-            + Nouveau
-          </button>
+          >{t("+ Nouveau")}</button>
         </div>
 
         <label className="project-select-label" htmlFor="active-project">
-          <span className="visually-hidden">Choisir le projet actuel</span>
+          <span className="visually-hidden">{t("Choisir le projet actuel")}</span>
           <select
             id="active-project"
             value={activeProjectId || ''}
@@ -159,16 +158,10 @@ export default function ProjectSwitcher({
           </select>
         </label>
 
-        <div className="project-secondary-actions" aria-label="Actions du projet actuel">
-          <button type="button" disabled={disabled || !activeProject} onClick={() => setDialogMode('rename')}>
-            Renommer
-          </button>
-          <button type="button" disabled={disabled || !activeProject} onClick={onDuplicate}>
-            Dupliquer
-          </button>
-          <button className="project-delete-button" type="button" disabled={disabled || !activeProject} onClick={onDelete}>
-            Supprimer
-          </button>
+        <div className="project-secondary-actions" aria-label={t("Actions du projet actuel")}>
+          <button type="button" disabled={disabled || !activeProject} onClick={() => setDialogMode('rename')}>{t("Renommer")}</button>
+          <button type="button" disabled={disabled || !activeProject} onClick={onDuplicate}>{t("Dupliquer")}</button>
+          <button className="project-delete-button" type="button" disabled={disabled || !activeProject} onClick={onDelete}>{t("Supprimer")}</button>
         </div>
       </section>
 

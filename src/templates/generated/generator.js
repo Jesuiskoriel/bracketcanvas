@@ -288,7 +288,7 @@ export const generatedLayouts = [
     id: 'auto',
     label: 'Laisser le générateur choisir',
     group: 'auto',
-    description: 'Le layout est choisi selon la direction et le niveau de variation.',
+    description: "La composition est choisie selon la direction artistique et le niveau de variation.",
   },
   ...layoutFamilies.map((layout) => ({
     id: layout.id,

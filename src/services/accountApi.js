@@ -1,15 +1,17 @@
+import { getLanguage } from '../i18n.js'
 const request = async (path, options = {}) => {
   const response = await fetch(path, {
     credentials: 'same-origin',
     ...options,
     headers: {
       ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+      'Accept-Language': getLanguage(),
       ...options.headers,
     },
   })
   const payload = await response.json().catch(() => ({}))
   if (!response.ok) {
-    const error = new Error(payload.error || 'Le serveur est indisponible.')
+    const error = new Error(payload.errorKey || payload.error || 'Le serveur est indisponible.')
     error.status = response.status
     error.payload = payload
     throw error

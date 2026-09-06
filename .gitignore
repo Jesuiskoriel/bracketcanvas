@@ -13,6 +13,8 @@ dist-ssr
 *.local
 .env
 /data/
+/test-results/
+/playwright-report/
 /Portfolio-2/
 *.sqlite
 *.sqlite-shm

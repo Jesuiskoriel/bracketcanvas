@@ -1,3 +1,4 @@
+import { msg, t, useLanguage } from '../i18n.js'
 import { useMemo, useState } from 'react'
 import {
   confirmPasswordReset,
@@ -10,6 +11,7 @@ const getInitialMode = () => {
 }
 
 export default function AuthScreen({ onLogin, onRegister }) {
+  useLanguage()
   const resetToken = useMemo(
     () => new URLSearchParams(window.location.search).get('token') || '',
     [],
@@ -39,16 +41,19 @@ export default function AuthScreen({ onLogin, onRegister }) {
       if (isRequestingReset) {
         const result = await requestPasswordReset(form.email)
         setMessage(result.resetLink
-          ? `Lien de reset dev : ${result.resetLink}`
-          : result.message)
+          ? msg("Lien de reset dev : {0}", { 0: result.resetLink })
+          : result.messageKey || result.message)
         return
       }
       if (isResettingPassword) {
         await confirmPasswordReset({ token: resetToken, password: form.password })
-        window.history.replaceState({}, '', '/')
+        const nextUrl = new URL(window.location.href)
+        nextUrl.pathname = '/'
+        nextUrl.searchParams.delete('token')
+        window.history.replaceState({}, '', nextUrl)
         setMode('login')
         setForm((current) => ({ ...current, password: '' }))
-        setMessage('Mot de passe mis a jour. Tu peux te connecter.')
+        setMessage(msg("Mot de passe mis à jour. Tu peux te connecter."))
         return
       }
       const action = isRegistering ? onRegister : onLogin
@@ -67,82 +72,70 @@ export default function AuthScreen({ onLogin, onRegister }) {
   }
 
   const title = isResettingPassword
-    ? 'Choisis un nouveau mot de passe'
+    ? t("Choisis un nouveau mot de passe")
     : isRequestingReset
-      ? 'Retrouve ton acces'
-      : isRegistering ? 'Creer ton espace' : 'Retrouve tes canvas'
+      ? t("Retrouve ton accès")
+      : isRegistering ? t("Crée ton espace") : t("Retrouve tes canevas")
 
   const submitLabel = isSubmitting
-    ? 'Connexion au serveur...'
+    ? t("Connexion au serveur…")
     : isResettingPassword
-      ? 'Changer le mot de passe'
+      ? t("Changer le mot de passe")
       : isRequestingReset
-        ? 'Recevoir le lien'
-        : isRegistering ? 'Creer mon espace' : 'Se connecter'
+        ? t("Recevoir le lien")
+        : isRegistering ? t("Créer mon espace") : t("Se connecter")
 
   return (
     <main className="auth-shell">
       <section className="auth-card" aria-labelledby="auth-title">
         <div className="auth-brand" aria-hidden="true">BC</div>
         <p className="eyebrow">BracketCanvas</p>
-        <h1 id="auth-title">{title}</h1>
-        <p className="auth-intro">
-          Tes Top 8, tes templates et tes reglages restent prives et synchronises avec ton compte.
-        </p>
+        <h1 id="auth-title">{t(title)}</h1>
+        <p className="auth-intro">{t("Tes Top 8, tes modèles et tes réglages restent privés et synchronisés avec ton compte.")}</p>
 
         {!isRequestingReset && !isResettingPassword && (
-          <div className="auth-tabs" role="tablist" aria-label="Authentification">
+          <div className="auth-tabs" role="tablist" aria-label={t("Authentification")}>
             <button
               type="button"
               role="tab"
               aria-selected={!isRegistering}
               onClick={() => changeMode('login')}
-            >
-              Connexion
-            </button>
+            >{t("Connexion")}</button>
             <button
               type="button"
               role="tab"
               aria-selected={isRegistering}
               onClick={() => changeMode('register')}
-            >
-              Creer un compte
-            </button>
+            >{t("Créer un compte")}</button>
           </div>
         )}
 
         <form className="auth-form" onSubmit={submit}>
           {isRegistering && (
-            <label>
-              Nom affiche
-              <input
+            <label>{t("Nom affiché")}<input
                 name="displayName"
                 value={form.displayName}
                 maxLength="48"
                 autoComplete="name"
                 onChange={(event) => updateField('displayName', event.target.value)}
-                placeholder="Ton pseudo"
+                placeholder={t("Ton pseudo")}
               />
             </label>
           )}
           {!isResettingPassword && (
-            <label>
-              Adresse email
-              <input
+            <label>{t("Adresse e-mail")}<input
                 name="email"
                 type="email"
                 value={form.email}
                 required
                 autoComplete="email"
                 onChange={(event) => updateField('email', event.target.value)}
-                placeholder="toi@exemple.fr"
+                placeholder={t("toi@exemple.fr")}
               />
             </label>
           )}
           {!isRequestingReset && (
-            <label>
-              Mot de passe
-              <input
+            <label>{t("Mot de passe")}<input
                 name="password"
                 type="password"
                 value={form.password}
@@ -151,25 +144,21 @@ export default function AuthScreen({ onLogin, onRegister }) {
                 autoComplete={isRegistering || isResettingPassword ? 'new-password' : 'current-password'}
                 onChange={(event) => updateField('password', event.target.value)}
                 placeholder={isRegistering || isResettingPassword
-                  ? '10 caracteres minimum'
-                  : 'Ton mot de passe'}
+                  ? t("10 caractères minimum")
+                  : t("Ton mot de passe")}
               />
             </label>
           )}
-          {error && <p className="auth-error" role="alert">{error}</p>}
-          {message && <p className="auth-message" role="status">{message}</p>}
+          {error && <p className="auth-error" role="alert">{t(error)}</p>}
+          {message && <p className="auth-message" role="status">{t(message)}</p>}
           <button className="auth-submit" type="submit" disabled={isSubmitting}>
             {submitLabel}
           </button>
           {!isRegistering && !isRequestingReset && !isResettingPassword && (
-            <button className="auth-link" type="button" onClick={() => changeMode('forgot')}>
-              Mot de passe oublie
-            </button>
+            <button className="auth-link" type="button" onClick={() => changeMode('forgot')}>{t("Mot de passe oublié")}</button>
           )}
           {(isRequestingReset || isResettingPassword) && (
-            <button className="auth-link" type="button" onClick={() => changeMode('login')}>
-              Retour connexion
-            </button>
+            <button className="auth-link" type="button" onClick={() => changeMode('login')}>{t("Retour à la connexion")}</button>
           )}
         </form>
       </section>

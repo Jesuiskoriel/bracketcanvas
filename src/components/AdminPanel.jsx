@@ -1,9 +1,10 @@
+import { t, useLanguage, getLocale } from '../i18n.js'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { loadAdminUsers, setAdminUserDisabled } from '../services/accountApi.js'
 
 const formatDate = (value) => value
-  ? new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
-  : 'Aucune activité'
+  ? new Intl.DateTimeFormat(getLocale(), { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
+  : t("Aucune activité")
 
 const getLatestActivity = ({ workspaceUpdatedAt, lastSessionAt }) => {
   const dates = [workspaceUpdatedAt, lastSessionAt].filter(Boolean)
@@ -12,6 +13,7 @@ const getLatestActivity = ({ workspaceUpdatedAt, lastSessionAt }) => {
 }
 
 export default function AdminPanel({ currentUserId, onClose }) {
+  useLanguage()
   const [users, setUsers] = useState([])
   const [query, setQuery] = useState('')
   const [error, setError] = useState('')
@@ -60,8 +62,8 @@ export default function AdminPanel({ currentUserId, onClose }) {
     const shouldDisable = !user.disabledAt
     const confirmed = window.confirm(
       shouldDisable
-        ? `Suspendre le compte de ${user.displayName} ? Ses sessions seront immédiatement fermées.`
-        : `Réactiver le compte de ${user.displayName} ?`,
+        ? t("Suspendre le compte de {0} ? Ses sessions seront immédiatement fermées.", { 0: user.displayName })
+        : t("Réactiver le compte de {0} ?", { 0: user.displayName }),
     )
     if (!confirmed) return
 
@@ -91,52 +93,52 @@ export default function AdminPanel({ currentUserId, onClose }) {
         <header className="admin-header">
           <div>
             <p className="eyebrow">BracketCanvas</p>
-            <h2 id="admin-title">Administration</h2>
-            <p>Consulte les comptes et contrôle leur accès à l’application.</p>
+            <h2 id="admin-title">{t("Administration")}</h2>
+            <p>{t("Consulte les comptes et contrôle leur accès à l’application.")}</p>
           </div>
-          <button ref={closeButtonRef} className="admin-close" type="button" onClick={onClose} aria-label="Fermer l’administration">×</button>
+          <button ref={closeButtonRef} className="admin-close" type="button" onClick={onClose} aria-label={t("Fermer l’administration")}>×</button>
         </header>
 
-        <div className="admin-stats" aria-label="Résumé des utilisateurs">
-          <div><strong>{users.length}</strong><span>Comptes</span></div>
-          <div><strong>{activeCount}</strong><span>Actifs</span></div>
-          <div><strong>{projectCount}</strong><span>Canvas</span></div>
+        <div className="admin-stats" aria-label={t("Résumé des utilisateurs")}>
+          <div><strong>{users.length}</strong><span>{t("Comptes")}</span></div>
+          <div><strong>{activeCount}</strong><span>{t("Actifs")}</span></div>
+          <div><strong>{projectCount}</strong><span>{t("Canevas")}</span></div>
         </div>
 
         <label className="admin-search" htmlFor="admin-user-search">
-          <span>Rechercher un utilisateur</span>
+          <span>{t("Rechercher un utilisateur")}</span>
           <input
             id="admin-user-search"
             type="search"
             value={query}
-            placeholder="Nom ou adresse email"
+            placeholder={t("Nom ou adresse e-mail")}
             onChange={(event) => setQuery(event.target.value)}
           />
         </label>
 
-        {error && <p className="admin-error" role="alert">{error}</p>}
+        {error && <p className="admin-error" role="alert">{t(error)}</p>}
         {isLoading ? (
-          <p className="admin-loading" role="status">Chargement des utilisateurs…</p>
+          <p className="admin-loading" role="status">{t("Chargement des utilisateurs…")}</p>
         ) : (
           <div className="admin-table-wrap">
             <table className="admin-user-table">
-              <thead><tr><th>Utilisateur</th><th>Inscription</th><th>Dernière activité</th><th>Canvas</th><th>Statut</th><th><span className="visually-hidden">Action</span></th></tr></thead>
+              <thead><tr><th>{t("Utilisateur")}</th><th>{t("Inscription")}</th><th>{t("Dernière activité")}</th><th>{t("Canevas")}</th><th>{t("Statut")}</th><th><span className="visually-hidden">{t("Action")}</span></th></tr></thead>
               <tbody>
                 {filteredUsers.map((user) => {
                   const isProtected = user.id === currentUserId || user.role === 'admin'
                   return (
                     <tr key={user.id}>
-                      <td data-label="Utilisateur"><strong>{user.displayName}</strong><small>{user.email}</small></td>
-                      <td data-label="Inscription">{formatDate(user.createdAt)}</td>
-                      <td data-label="Dernière activité">{formatDate(getLatestActivity(user))}</td>
-                      <td data-label="Canvas">{user.projectCount}</td>
-                      <td data-label="Statut"><span className={`admin-status ${user.disabledAt ? 'is-disabled' : 'is-active'}`}>{user.disabledAt ? 'Suspendu' : user.role === 'admin' ? 'Administrateur' : 'Actif'}</span></td>
+                      <td data-label={t('Utilisateur')}><strong>{user.displayName}</strong><small>{user.email}</small></td>
+                      <td data-label={t('Inscription')}>{formatDate(user.createdAt)}</td>
+                      <td data-label={t('Dernière activité')}>{formatDate(getLatestActivity(user))}</td>
+                      <td data-label={t('Canevas')}>{user.projectCount}</td>
+                      <td data-label={t('Statut')}><span className={`admin-status ${user.disabledAt ? 'is-disabled' : 'is-active'}`}>{user.disabledAt ? t("Suspendu") : user.role === 'admin' ? t("Administrateur") : t("Actif")}</span></td>
                       <td className="admin-user-action">
                         {isProtected ? (
-                          <span className="admin-protected">Protégé</span>
+                          <span className="admin-protected">{t("Protégé")}</span>
                         ) : (
                           <button type="button" disabled={pendingUserId === user.id} onClick={() => toggleUser(user)}>
-                            {pendingUserId === user.id ? 'Mise à jour…' : user.disabledAt ? 'Réactiver' : 'Suspendre'}
+                            {pendingUserId === user.id ? t("Mise à jour…") : user.disabledAt ? t("Réactiver") : t("Suspendre")}
                           </button>
                         )}
                       </td>
@@ -145,7 +147,7 @@ export default function AdminPanel({ currentUserId, onClose }) {
                 })}
               </tbody>
             </table>
-            {!filteredUsers.length && <p className="admin-empty">Aucun utilisateur ne correspond à cette recherche.</p>}
+            {!filteredUsers.length && <p className="admin-empty">{t("Aucun utilisateur ne correspond à cette recherche.")}</p>}
           </div>
         )}
       </section>

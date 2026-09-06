@@ -1,3 +1,4 @@
+import { t } from '../i18n.js'
 const analysisCache = new Map()
 const ALPHA_THRESHOLD = 24
 const MAX_ANALYSIS_SIZE = 192
@@ -44,7 +45,7 @@ const loadImage = (source) =>
     const image = new Image()
     image.decoding = 'async'
     image.onload = () => resolve(image)
-    image.onerror = () => reject(new Error("Le render n'a pas pu être analysé."))
+    image.onerror = () => reject(new Error(t("Le render n'a pas pu être analysé.")))
     image.src = source
   })
 

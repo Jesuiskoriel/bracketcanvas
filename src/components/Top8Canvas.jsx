@@ -1,3 +1,4 @@
+import { t, useLanguage } from '../i18n.js'
 import { forwardRef } from 'react'
 import PlayerSlot from './PlayerSlot.jsx'
 import PlacementNumber from './PlacementNumber.jsx'
@@ -17,11 +18,12 @@ const Top8Canvas = forwardRef(function Top8Canvas(
   },
   ref,
 ) {
+  useLanguage()
   const metadataValues = {
     eventName: eventDetails.eventName,
     subtitle: eventDetails.subtitle,
     date: eventDetails.date,
-    participantCount: `${eventDetails.participantCount || '0'} Participant${Number(eventDetails.participantCount) > 1 ? 's' : ''}`,
+    participantCount: t(Number(eventDetails.participantCount) === 1 ? '{0} participant' : '{0} participants', { 0: eventDetails.participantCount || '0' }),
   }
 
   return (
@@ -32,7 +34,7 @@ const Top8Canvas = forwardRef(function Top8Canvas(
         aspectRatio: `${template.width} / ${template.height}`,
         ...template.canvasStyle,
       }}
-      aria-label="Aperçu du Top 8"
+      aria-label={t("Aperçu du Top 8")}
     >
       {template.layers
         .filter((layer) => layer.zIndex < 20)
