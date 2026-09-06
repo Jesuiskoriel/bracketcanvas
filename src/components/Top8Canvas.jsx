@@ -73,6 +73,17 @@ const Top8Canvas = forwardRef(function Top8Canvas(
           }}
         />
       ))}
+      {eventDetails.customBackground && (
+        <img
+          className="custom-background-layer"
+          data-psd-key="custom-background"
+          data-psd-role="background"
+          src={eventDetails.customBackground}
+          alt=""
+          aria-hidden="true"
+          draggable="false"
+        />
+      )}
       {template.metadata.map((field) => (
         <span
           key={field.id}
@@ -119,26 +130,29 @@ const Top8Canvas = forwardRef(function Top8Canvas(
           }}
         />
       )}
-      {template.slots.map((slot) => (
-        <img
-          key={`${slot.id}-texture`}
-          className={`slot-texture${slot.podiumTone ? ` slot-texture-${slot.podiumTone}` : ''}`}
-          data-psd-key={`slot-texture-${slot.id}`}
-          data-psd-role="slot-texture"
-          src={slot.texture || template.slotTexture}
-          alt=""
-          aria-hidden="true"
-          draggable="false"
-          style={{
-            left: `${(slot.x / template.width) * 100}%`,
-            top: `${(slot.y / template.height) * 100}%`,
-            width: `${(slot.width / template.width) * 100}%`,
-            height: `${(slot.height / template.height) * 100}%`,
-            clipPath: slot.clipPath,
-            ...template.slotTextureStyle,
-          }}
-        />
-      ))}
+      {template.slots.map((slot) => {
+        const player = players.find((candidate) => candidate.id === slot.id)
+        return (
+          <img
+            key={`${slot.id}-texture`}
+            className={`slot-texture${slot.podiumTone ? ` slot-texture-${slot.podiumTone}` : ''}${player?.slotBackground ? ' slot-texture-custom' : ''}`}
+            data-psd-key={`slot-texture-${slot.id}`}
+            data-psd-role="slot-texture"
+            src={player?.slotBackground || slot.texture || template.slotTexture}
+            alt=""
+            aria-hidden="true"
+            draggable="false"
+            style={{
+              left: `${(slot.x / template.width) * 100}%`,
+              top: `${(slot.y / template.height) * 100}%`,
+              width: `${(slot.width / template.width) * 100}%`,
+              height: `${(slot.height / template.height) * 100}%`,
+              clipPath: slot.clipPath,
+              ...template.slotTextureStyle,
+            }}
+          />
+        )
+      })}
       {template.slots.map((slot) => (
         <PlayerSlot
           key={slot.id}

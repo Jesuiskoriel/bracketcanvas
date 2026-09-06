@@ -222,10 +222,10 @@ function PlayerSlot({
   }
 
   const logoStyle = {
-    top: `${template.teamLogo.top}%`,
-    right: `${template.teamLogo.right}%`,
-    width: `${template.teamLogo.width}%`,
-    height: `${template.teamLogo.height}%`,
+    left: `${player.teamLogoX ?? 100 - template.teamLogo.right - template.teamLogo.width}%`,
+    top: `${player.teamLogoY ?? template.teamLogo.top}%`,
+    width: `${player.teamLogoSize ?? Math.max(template.teamLogo.width, template.teamLogo.height)}%`,
+    height: `${player.teamLogoSize ?? Math.max(template.teamLogo.width, template.teamLogo.height)}%`,
   }
 
   const debugStyle = (bounds) =>

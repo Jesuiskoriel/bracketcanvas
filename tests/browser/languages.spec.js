@@ -3,6 +3,19 @@ import { english } from '../../shared/i18n.js'
 import { DatabaseSync } from 'node:sqlite'
 
 const password = 'Local-test-password-123'
+const tinyPng = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFklEQVR42mP8z8Dwn4GBgYGJAQoAHxcCAt9fLwYAAAAASUVORK5CYII=',
+  'base64',
+)
+const tinyUpload = (name) => ({ name, mimeType: 'image/png', buffer: tinyPng })
+const setRangeValue = async (locator, value) => {
+  await locator.evaluate((element, nextValue) => {
+    const valueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
+    valueSetter?.call(element, nextValue)
+    element.dispatchEvent(new Event('input', { bubbles: true }))
+    element.dispatchEvent(new Event('change', { bubbles: true }))
+  }, value)
+}
 const createStoredProjectCollection = () => {
   const now = new Date().toISOString()
   const project = {
@@ -23,9 +36,11 @@ const createStoredProjectCollection = () => {
         eventType: 'weekly',
         tournamentLogo: '',
         tournamentLogoName: '',
+        customBackground: '',
+        customBackgroundName: '',
       },
       players: [
-        { id: 'first', placement: 1, playerName: 'Target Player', character: '', renderId: '', secondaryCharacter: '', secondaryRenderId: '', teamLogo: '', teamLogoName: '', x: 0, y: 0, scale: 1, flipped: false, opacity: 100, secondaryX: 18, secondaryY: 0, secondaryScale: 1, secondaryFlipped: false, secondaryOpacity: 100 },
+        { id: 'first', placement: 1, playerName: 'Target Player', character: '', renderId: '', secondaryCharacter: '', secondaryRenderId: '', teamLogo: '', teamLogoName: '', slotBackground: '', slotBackgroundName: '', teamLogoX: 60, teamLogoY: 8, teamLogoSize: 22, x: 0, y: 0, scale: 1, flipped: false, opacity: 100, secondaryX: 18, secondaryY: 0, secondaryScale: 1, secondaryFlipped: false, secondaryOpacity: 100 },
       ],
     },
   }
@@ -117,6 +132,18 @@ for (const width of [1440, 390]) {
     await expect(page.getByLabel('Nom de l’événement', { exact: true })).toHaveValue('Tournoi été')
     await page.getByRole('combobox', { name: 'Langue' }).selectOption('en')
     await expect(page.getByLabel('Player tag', { exact: true }).first()).toHaveValue('Joueur Élodie')
+    await page.locator('#custom-background').setInputFiles(tinyUpload('global-background.png'))
+    await page.locator('#first-team-logo').setInputFiles(tinyUpload('team-logo.png'))
+    await page.locator('#first-slot-background').setInputFiles(tinyUpload('slot-background.png'))
+    await setRangeValue(page.locator('#first-team-logo-x'), '14')
+    await setRangeValue(page.locator('#first-team-logo-y'), '22')
+    await setRangeValue(page.locator('#first-team-logo-size'), '28')
+    await expect(page.locator('.custom-background-layer')).toHaveAttribute('src', /^data:image\/png/)
+    await expect(page.locator('.slot-texture-custom').first()).toHaveAttribute('src', /^data:image\/png/)
+    await expect(page.locator('.team-logo').first()).toHaveAttribute('src', /^data:image\/png/)
+    await expect.poll(() => page.locator('.team-logo').first().evaluate((element) => element.style.left)).toBe('14%')
+    await expect.poll(() => page.locator('.team-logo').first().evaluate((element) => element.style.top)).toBe('22%')
+    await expect.poll(() => page.locator('.team-logo').first().evaluate((element) => element.style.width)).toBe('28%')
     await page.getByRole('button', { name: 'Palette', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'Global palette' })).toBeVisible()
     expect(await unknownFrench(page.locator('.palette-editor'))).toEqual([])

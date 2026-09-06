@@ -58,6 +58,12 @@ const DEFAULT_SECONDARY_RENDER_TRANSFORM = {
   secondaryOpacity: 100,
 }
 
+const createDefaultTeamLogoTransform = (template = zeroTemplate) => ({
+  teamLogoX: 100 - template.teamLogo.right - template.teamLogo.width,
+  teamLogoY: template.teamLogo.top,
+  teamLogoSize: Math.max(template.teamLogo.width, template.teamLogo.height),
+})
+
 const createInitialPlayers = (template = zeroTemplate) =>
   template.slots.map((slot) => ({
     id: slot.id,
@@ -71,6 +77,8 @@ const createInitialPlayers = (template = zeroTemplate) =>
     secondaryRender: '',
     teamLogo: '',
     teamLogoName: '',
+    slotBackground: '',
+    slotBackgroundName: '',
     rankX: slot.rank.x,
     rankY: slot.rank.y,
     rankSize: slot.rank.size,
@@ -78,6 +86,7 @@ const createInitialPlayers = (template = zeroTemplate) =>
     rankLayer: slot.rank.layer,
     ...DEFAULT_RENDER_TRANSFORM,
     ...DEFAULT_SECONDARY_RENDER_TRANSFORM,
+    ...createDefaultTeamLogoTransform(template),
   }))
 
 const initialPlayers = createInitialPlayers(zeroTemplate)
@@ -107,6 +116,8 @@ const createInitialEventDetails = () => ({
   eventType: 'weekly',
   tournamentLogo: '',
   tournamentLogoName: '',
+  customBackground: '',
+  customBackgroundName: '',
 })
 
 const INITIAL_SELECTED_LAYER = {
@@ -143,6 +154,7 @@ const restorePlayers = async (
         ...defaultPlayer,
         ...(savedPlayer || {}),
         teamLogo: restorePersistentImage(savedPlayer?.teamLogo),
+        slotBackground: restorePersistentImage(savedPlayer?.slotBackground),
         ...(shouldResetTemplateFields
           ? {
               rankX: defaultPlayer.rankX,
@@ -225,6 +237,9 @@ const restoreProjectState = async (savedProject = {}) => {
     ...(isObject(project.eventDetails) ? project.eventDetails : {}),
     tournamentLogo: restorePersistentImage(
       project.eventDetails?.tournamentLogo,
+    ),
+    customBackground: restorePersistentImage(
+      project.eventDetails?.customBackground,
     ),
   }
   const hasValidSelectedLayer =
@@ -797,18 +812,44 @@ function App({ currentUser, onLogout }) {
     }
   }
 
-  const selectTournamentLogo = async (file) => {
+  const selectSlotBackground = async (playerId, file) => {
     try {
-      const tournamentLogo = file ? await fileToDataUrl(file) : ''
+      const slotBackground = file ? await fileToDataUrl(file) : ''
+      setPlayers((currentPlayers) =>
+        currentPlayers.map((player) =>
+          player.id === playerId
+            ? {
+                ...player,
+                slotBackground,
+                slotBackgroundName: file?.name || '',
+              }
+            : player,
+        ),
+      )
+    } catch (error) {
+      console.error(error)
+      setSaveStatus(msg("Le fond de la case n'a pas pu être importé."))
+    }
+  }
+
+  const selectTournamentImage = async (key, nameKey, errorMessage, file) => {
+    try {
+      const image = file ? await fileToDataUrl(file) : ''
       updateEventDetails({
-        tournamentLogo,
-        tournamentLogoName: file?.name || '',
+        [key]: image,
+        [nameKey]: file?.name || '',
       })
     } catch (error) {
       console.error(error)
-      setSaveStatus(msg("Le logo du tournoi n'a pas pu être importé."))
+      setSaveStatus(msg(errorMessage))
     }
   }
+
+  const selectTournamentLogo = (file) =>
+    selectTournamentImage('tournamentLogo', 'tournamentLogoName', "Le logo du tournoi n'a pas pu être importé.", file)
+
+  const selectCustomBackground = (file) =>
+    selectTournamentImage('customBackground', 'customBackgroundName', "Le fond personnalisé n'a pas pu être importé.", file)
 
   const importStartggTop8 = async (importedProject) => {
     const importedPlayers = await Promise.all(
@@ -1220,6 +1261,7 @@ function App({ currentUser, onLogout }) {
           details={eventDetails}
           onChange={updateEventDetails}
           onLogoChange={selectTournamentLogo}
+          onBackgroundChange={selectCustomBackground}
         />
 
         <StartggImporter
@@ -1291,6 +1333,7 @@ function App({ currentUser, onLogout }) {
                 )
               }
               onLogoChange={(file) => selectTeamLogo(player.id, file)}
+              onSlotBackgroundChange={(file) => selectSlotBackground(player.id, file)}
               isAutoPlacing={
                 autoPlacementTarget === 'all' || autoPlacementTarget === player.id
               }

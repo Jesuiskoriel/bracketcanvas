@@ -778,6 +778,7 @@
 .tournament-logo { position: absolute; object-fit: contain; object-position: left bottom; pointer-events: none; user-select: none; filter: drop-shadow(0 1px 3px rgba(0, 0, 0, .72)); }
 .template-text { position: absolute; display: block; overflow: hidden; color: white; font-family: "Hylia Serif", serif; font-weight: 400; letter-spacing: .01em; text-shadow: 0 1px 1px rgba(0, 0, 0, .35); white-space: normal; }
 .template-text-eventName { font-weight: 600; }
+.custom-background-layer { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; object-fit: cover; pointer-events: none; user-select: none; }
 .slot-texture { position: absolute; z-index: 1; display: block; object-fit: cover; background-color: #c6944f; filter: saturate(.84) contrast(1.05) brightness(.9); pointer-events: none; user-select: none; }
 .player-slot { position: absolute; overflow: hidden; }
 .player-render { position: absolute; left: 50%; top: 48%; width: 92%; max-width: none; cursor: grab; touch-action: none; user-select: none; transform-origin: center; filter: saturate(.92) contrast(1.04); }
@@ -820,6 +821,7 @@
 .top8-canvas-comic .tournament-logo { object-position: center; filter: drop-shadow(0 0 3px rgba(53, 228, 255, .72)); }
 
 .top8-canvas-generated .slot-texture { background: transparent; }
+.top8-canvas .slot-texture-custom { filter: none; }
 .top8-canvas-generated .player-name {
   box-sizing: border-box;
   justify-content: center;

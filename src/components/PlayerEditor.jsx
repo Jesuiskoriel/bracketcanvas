@@ -35,6 +35,7 @@ function PlayerEditor({
   onSecondaryCharacterChange,
   onSecondaryRenderChange,
   onLogoChange,
+  onSlotBackgroundChange,
   isAutoPlacing,
   onAutoPlace,
 }) {
@@ -101,6 +102,44 @@ function PlayerEditor({
             )}
           </div>
           <small>{player.teamLogoName || t("PNG, JPG, WebP ou SVG")}</small>
+        </div>
+
+        {player.teamLogo && (
+          <fieldset className="control-group team-logo-controls">
+            <legend>{t("Position du logo d’équipe")}</legend>
+            <div className="ranges-grid">
+              <RangeControl id={`${player.id}-team-logo-x`} label={t("Position X")} value={player.teamLogoX} min={0} max={100} step={0.1} suffix="%" onChange={(teamLogoX) => onChange({ teamLogoX })} />
+              <RangeControl id={`${player.id}-team-logo-y`} label={t("Position Y")} value={player.teamLogoY} min={0} max={100} step={0.1} suffix="%" onChange={(teamLogoY) => onChange({ teamLogoY })} />
+              <RangeControl id={`${player.id}-team-logo-size`} label={t("Taille")} value={player.teamLogoSize} min={5} max={80} step={0.5} suffix="%" onChange={(teamLogoSize) => onChange({ teamLogoSize })} />
+            </div>
+          </fieldset>
+        )}
+
+        <div className="logo-control">
+          <span>{t("Fond de la case")}</span>
+          <div className="logo-input-row">
+            <label className="file-button">
+              {player.slotBackground ? t("Remplacer l’image") : t("Importer une image")}
+              <input
+                id={`${player.id}-slot-background`}
+                className="visually-hidden-file"
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                onChange={(event) => {
+                  onSlotBackgroundChange(event.target.files?.[0] || null)
+                  event.target.value = ''
+                }}
+              />
+            </label>
+            {player.slotBackground && (
+              <button
+                className="remove-logo-button"
+                type="button"
+                onClick={() => onSlotBackgroundChange(null)}
+              >{t("Retirer")}</button>
+            )}
+          </div>
+          <small>{player.slotBackgroundName || t("Remplace la texture de cette case")}</small>
         </div>
 
         <div className="selects-grid">

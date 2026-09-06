@@ -41,6 +41,8 @@ const createPreviewPlayers = async (projectData, template) => {
       secondaryRender: '',
       teamLogo: '',
       teamLogoName: '',
+      slotBackground: '',
+      slotBackgroundName: '',
       rankX: slot.rank.x,
       rankY: slot.rank.y,
       rankSize: slot.rank.size,
@@ -56,6 +58,9 @@ const createPreviewPlayers = async (projectData, template) => {
       secondaryScale: 1,
       secondaryFlipped: false,
       secondaryOpacity: 100,
+      teamLogoX: 100 - template.teamLogo.right - template.teamLogo.width,
+      teamLogoY: template.teamLogo.top,
+      teamLogoSize: Math.max(template.teamLogo.width, template.teamLogo.height),
       ...savedPlayer,
     }
     const [render, secondaryRender] = await Promise.all([
@@ -86,6 +91,7 @@ const createProjectPreview = async (project) => {
       date: '00/00/0000',
       participantCount: '00',
       tournamentLogo: '',
+      customBackground: '',
       ...(isObject(projectData.eventDetails) ? projectData.eventDetails : {}),
     },
   }

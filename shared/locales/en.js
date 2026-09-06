@@ -195,4 +195,13 @@ export default {
   'Préparation de l’aperçu…': 'Preparing preview…',
   'Aucun aperçu disponible.': 'No preview available.',
   'Cet utilisateur n’a encore aucun canevas.': 'This user does not have any canvases yet.',
+  'Fond global personnalisé': 'Custom global background',
+  'Remplace le fond du canevas': 'Replaces the canvas background',
+  'Remplacer l’image': 'Replace image',
+  'Importer une image': 'Import image',
+  'Fond de la case': 'Slot background',
+  'Remplace la texture de cette case': 'Replaces this slot texture',
+  'Position du logo d’équipe': 'Team logo position',
+  "Le fond personnalisé n'a pas pu être importé.": 'Unable to import the custom background.',
+  "Le fond de la case n'a pas pu être importé.": 'Unable to import the slot background.',
 }

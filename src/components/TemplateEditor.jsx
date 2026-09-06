@@ -1,5 +1,37 @@
 import { t, useLanguage } from '../i18n.js'
-function TemplateEditor({ details, onChange, onLogoChange }) {
+
+function ImageControl({ id, label, value, fileName, fallback, onChange }) {
+  return (
+    <div className="logo-control tournament-logo-control">
+      <span>{t(label)}</span>
+      <div className="logo-input-row">
+        <label className="file-button">
+          {value ? t("Remplacer l’image") : t("Importer une image")}
+          <input
+            id={id}
+            className="visually-hidden-file"
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/svg+xml"
+            onChange={(event) => {
+              onChange(event.target.files?.[0] || null)
+              event.target.value = ''
+            }}
+          />
+        </label>
+        {value && (
+          <button
+            className="remove-logo-button"
+            type="button"
+            onClick={() => onChange(null)}
+          >{t("Retirer")}</button>
+        )}
+      </div>
+      <small>{fileName || t(fallback)}</small>
+    </div>
+  )
+}
+
+function TemplateEditor({ details, onChange, onLogoChange, onBackgroundChange }) {
   useLanguage()
   return (
     <section className="template-editor" aria-labelledby="event-details-title">
@@ -59,32 +91,23 @@ function TemplateEditor({ details, onChange, onLogoChange }) {
           />
         </label>
 
-        <div className="logo-control tournament-logo-control">
-          <span>{t("Logo du tournoi")}</span>
-          <div className="logo-input-row">
-            <label className="file-button">
-              {details.tournamentLogo ? t("Remplacer le logo") : t("Importer un logo")}
-              <input
-                id="tournament-logo"
-                className="visually-hidden-file"
-                type="file"
-                accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                onChange={(event) => {
-                  onLogoChange(event.target.files?.[0] || null)
-                  event.target.value = ''
-                }}
-              />
-            </label>
-            {details.tournamentLogo && (
-              <button
-                className="remove-logo-button"
-                type="button"
-                onClick={() => onLogoChange(null)}
-              >{t("Retirer")}</button>
-            )}
-          </div>
-          <small>{details.tournamentLogoName || t("Affiché dans le coin supérieur droit")}</small>
-        </div>
+        <ImageControl
+          id="tournament-logo"
+          label="Logo du tournoi"
+          value={details.tournamentLogo}
+          fileName={details.tournamentLogoName}
+          fallback="Affiché dans le coin supérieur droit"
+          onChange={onLogoChange}
+        />
+
+        <ImageControl
+          id="custom-background"
+          label="Fond global personnalisé"
+          value={details.customBackground}
+          fileName={details.customBackgroundName}
+          fallback="Remplace le fond du canevas"
+          onChange={onBackgroundChange}
+        />
       </div>
     </section>
   )
